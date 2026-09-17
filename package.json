@@ -13,7 +13,8 @@
     "typecheck": "turbo run typecheck",
     "db:generate": "pnpm --filter @erp/db generate",
     "db:migrate": "pnpm --filter @erp/db migrate:dev",
-    "db:studio": "pnpm --filter @erp/db studio"
+    "db:studio": "pnpm --filter @erp/db studio",
+    "db:seed": "pnpm --filter @erp/db seed"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
