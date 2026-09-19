@@ -183,22 +183,33 @@ app/
                      REJECTED/EXPIRED), borrado (solo DRAFT), y sección de
                      ocupaciones con actividades anidadas — todo editable
                      solo mientras la cotización está en DRAFT
-    reservas/
+    reservas/        ✅ lista (filtro por estado) + detalle con balance
+                     (total/anticipado/saldo), transiciones de estado
+                     controladas (CONFIRMED es inalcanzable manualmente —
+                     solo ocurre al registrar el anticipo inicial, igual
+                     que el backend), sección de viajeros (con reglas de
+                     titular y asignación de asiento por autobús) y
+                     sección de anticipos (solo alta, sin edición/borrado
+                     — es un registro contable)
 components/
   ui/        ✅ Modal (soporta size md/lg), Badge (reutilizables entre módulos)
   forms/     ✅ ClientForm, ProviderForm, TripForm, BusForm, RoomTypeForm,
              ActivityForm, QuoteForm (alta), QuoteEditForm (notas/vigencia),
-             OccupancyForm (mismo patrón por módulo)
+             OccupancyForm, ReservationForm (alta), TravelerForm, DepositForm
+             (mismo patrón por módulo)
   trips/     ✅ BusesSection, RoomTypesSection, ActivitiesSection (listas
              autocontenidas usadas en el detalle de viaje)
   quotes/    ✅ OccupanciesSection (ocupaciones + alta/borrado de actividades
              inline por ocupación, respeta el snapshot de precios del backend)
+  reservations/ ✅ TravelersSection (viajeros + asignación de asiento inline
+             por autobús), DepositsSection (anticipos, marca el inicial)
 lib/         ✅ api.ts (fetch autenticado + manejo de 401), auth.ts (sesión
-             en localStorage), clients.ts, providers.ts, trips.ts, quotes.ts
-             (tipos + llamadas por recurso, incluye QUOTE_TRANSITIONS
-             espejo del mapa del backend para la UI), formats.ts (formatDate
-             compartido, fuerza timeZone: "UTC" para evitar el bug de día -1)
-             — cada módulo nuevo agrega su propio lib/<recurso>.ts
+             en localStorage), clients.ts, providers.ts, trips.ts, quotes.ts,
+             reservations.ts (tipos + llamadas por recurso, incluye
+             QUOTE_TRANSITIONS y RESERVATION_TRANSITIONS espejo de los mapas
+             del backend para la UI), formats.ts (formatDate compartido,
+             fuerza timeZone: "UTC" para evitar el bug de día -1) — cada
+             módulo nuevo agrega su propio lib/<recurso>.ts
 ```
 
 Probado en navegador real (Playwright headless, no solo build/typecheck): login → dashboard →
@@ -220,6 +231,16 @@ por el backend con 400, mensaje mostrado correctamente en el formulario) → agr
 válida → agregar una actividad a la ocupación (recalcula subtotal/total) → cambiar estado a SENT →
 confirmar que "Eliminar" y los controles de edición desaparecen al salir de DRAFT → volver a la
 lista y ver el estado y total actualizados. Sin errores de consola.
+
+También probado el flujo completo de Reservas: crear cotización → ocupación → SENT → ACCEPTED →
+crear reserva desde esa cotización (queda en PENDING_DEPOSIT) → agregar dos viajeros (titular +
+acompañante, con la regla de teléfono obligatorio para el titular) → asignar autobús/asiento a
+cada uno → registrar un anticipo que no alcanza el mínimo del viaje (rechazado por el backend,
+mensaje mostrado inline) → registrar el anticipo inicial por el mínimo o más → confirmar que el
+estado pasa automáticamente a CONFIRMED sin intervención manual (igual que el backend) → registrar
+un segundo anticipo y ver el saldo recalculado → mover el estado a COMPLETED. También se verificó
+que una reserva cancelada no reabre sus controles de edición (CANCELLED es un estado terminal, sin
+transiciones ni ediciones disponibles, igual que el backend). Sin errores de consola.
 
 **Tema visual (decidido y aplicado a toda la app):** tema claro, fondo `slate-50`, tarjetas `white`
 con borde `slate-200`, texto en escala de slate (`900` títulos, `700` cuerpo, `500` metadatos), y
@@ -251,9 +272,8 @@ inventar clases nuevas.
 5. ✅ Viajes + buses + room types + activities
 6. ✅ Cotizaciones
 7. ✅ Reservas + viajeros + depósitos
-8. ✅ Frontend: dashboard, clientes, proveedores, viajes, cotizaciones
-9. Frontend: reservas (viajeros, asientos, depósitos) ← **siguiente paso**
-10. Polishing y validaciones de UX
+8. ✅ Frontend: dashboard, clientes, proveedores, viajes, cotizaciones, reservas
+9. Polishing y validaciones de UX ← **siguiente paso**
 
 ### 7.5 Definición de "MVP terminado"
 
@@ -262,9 +282,11 @@ crear un viaje con buses y tipos de habitación → cotizar para ese cliente →
 crear la reserva con viajeros → registrar un depósito inicial → ver el estado de la reserva en el
 dashboard.
 
-**✅ Todo el flujo de backend ya está probado end-to-end contra Render** (vía curl, no desde la UI
-todavía) — solo falta construir las pantallas del frontend (§7.2) para que la agencia pueda operarlo
-sin tocar la API directamente.
+**✅ MVP completo y probado end-to-end desde la UI real** (Playwright headless contra la API en
+Render, no solo curl): login → cliente → viaje con buses/habitaciones → cotización con ocupaciones →
+cotización aceptada → reserva → viajeros con asientos → anticipo inicial → confirmación automática
+→ liquidación del saldo. Queda pendiente §7.4.9 (polishing y validaciones de UX) antes de considerar
+el frontend "terminado" más allá del flujo feliz.
 
 ## 8. Estado actual del repositorio
 
