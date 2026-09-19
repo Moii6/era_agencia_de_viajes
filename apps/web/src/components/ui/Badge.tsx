@@ -40,6 +40,17 @@ const LABELS: Record<string, string> = {
   HOTEL: "Hotel",
   TRANSPORT: "Transportista",
   OTHER: "Otro",
+  DRAFT: "Borrador",
+  SENT: "Enviada",
+  ACCEPTED: "Aceptada",
+  REJECTED: "Rechazada",
+  EXPIRED: "Expirada",
+  PENDING_DEPOSIT: "Pendiente de anticipo",
+  CONFIRMED: "Confirmada",
+  CANCELLED: "Cancelada",
+  COMPLETED: "Completado",
+  PUBLISHED: "Publicado",
+  CLOSED: "Cerrado",
 };
 
 export function Badge({ value }: { value: string }) {

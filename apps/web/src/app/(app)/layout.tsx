@@ -46,7 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white p-6">
         <div className="mb-8">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-teal-600">ERP</p>
-          <p className="mt-1 text-lg font-semibold text-slate-900">Agencia de Viajes</p>
+          <p className="mt-1 text-lg font-semibold text-slate-900">Travify</p>
         </div>
 
         <nav className="flex-1 space-y-1">

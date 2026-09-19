@@ -173,22 +173,37 @@ app/
     proveedores/     ✅ CRUD completo (lista, filtro por tipo) — no estaba
                      en el plan original, se agregó porque Viajes lo
                      necesita para elegir hotel/transportista
-    viajes/
+    viajes/          ✅ lista (filtro por estado) + detalle con edición,
+                     cambio de estado y 3 secciones anidadas (buses, tipos
+                     de habitación, actividades), cada una con su propio
+                     modal de alta/edición/borrado
     cotizaciones/
     reservas/
 components/
-  ui/        ✅ Modal, Badge (reutilizables entre módulos)
-  forms/     ✅ ClientForm, ProviderForm (mismo patrón por módulo)
+  ui/        ✅ Modal (soporta size md/lg), Badge (reutilizables entre módulos)
+  forms/     ✅ ClientForm, ProviderForm, TripForm, BusForm, RoomTypeForm,
+             ActivityForm (mismo patrón por módulo)
+  trips/     ✅ BusesSection, RoomTypesSection, ActivitiesSection (listas
+             autocontenidas usadas en el detalle de viaje)
 lib/         ✅ api.ts (fetch autenticado + manejo de 401), auth.ts (sesión
-             en localStorage), clients.ts, providers.ts (tipos + llamadas
-             por recurso) — cada módulo nuevo agrega su propio lib/<recurso>.ts
+             en localStorage), clients.ts, providers.ts, trips.ts (tipos +
+             llamadas por recurso), formats.ts (formatDate compartido,
+             fuerza timeZone: "UTC" para evitar el bug de día -1) — cada
+             módulo nuevo agrega su propio lib/<recurso>.ts
 ```
 
 Probado en navegador real (Playwright headless, no solo build/typecheck): login → dashboard →
 lista de clientes → crear → filtrar por etapa → editar → eliminar (soft delete), sin errores de
-consola. `chromium-cli` no estaba disponible en esta máquina; se usó un script de Playwright
-puntual en el scratchpad (no quedó como skill del proyecto — si se repite seguido, conviene correr
-`/run-skill-generator` para dejarlo formalizado).
+consola. También probado el flujo completo de Viajes: crear viaje → agregar bus/tipo de
+habitación/actividad → cambiar estado a PUBLISHED → volver a la lista y ver los conteos
+actualizados, sin errores de consola. `chromium-cli` no estaba disponible en esta máquina; se usó
+un script de Playwright puntual en el scratchpad (no quedó como skill del proyecto — si se repite
+seguido, conviene correr `/run-skill-generator` para dejarlo formalizado).
+
+Bug encontrado y corregido durante la revisión de capturas de la pantalla de Viajes: las fechas
+(`departureDate`/`returnDate`) se mostraban un día antes del valor guardado, porque
+`toLocaleDateString` sin `timeZone: "UTC"` convierte la medianoche UTC a la zona horaria local del
+navegador. Corregido centralizando el formateo en `lib/formats.ts`.
 
 **Tema visual (decidido y aplicado a toda la app):** tema claro, fondo `slate-50`, tarjetas `white`
 con borde `slate-200`, texto en escala de slate (`900` títulos, `700` cuerpo, `500` metadatos), y
