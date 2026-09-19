@@ -8,6 +8,7 @@ import { clearSession, getUser, SessionUser } from "@/lib/auth";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/clientes", label: "Clientes" },
+  { href: "/proveedores", label: "Proveedores" },
   { href: "/viajes", label: "Viajes" },
   { href: "/cotizaciones", label: "Cotizaciones" },
   { href: "/reservas", label: "Reservas" },

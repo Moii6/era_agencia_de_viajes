@@ -26,6 +26,10 @@ const STATUS_TONE: Record<string, Tone> = {
   COMPLETED: "success",
   PUBLISHED: "info",
   CLOSED: "danger",
+  // Provider type (categorical, not a status — tones just aid scanning)
+  HOTEL: "info",
+  TRANSPORT: "neutral",
+  OTHER: "neutral",
 };
 
 const LABELS: Record<string, string> = {
@@ -33,6 +37,9 @@ const LABELS: Record<string, string> = {
   PROSPECT: "Prospecto",
   CUSTOMER: "Cliente",
   INACTIVE: "Inactivo",
+  HOTEL: "Hotel",
+  TRANSPORT: "Transportista",
+  OTHER: "Otro",
 };
 
 export function Badge({ value }: { value: string }) {

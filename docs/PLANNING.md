@@ -169,17 +169,19 @@ app/
                      sesión + sidebar de navegación una sola vez
     dashboard/       ✅ básico (nombre, email, rol)
     clientes/        ✅ CRUD completo (lista, filtro por etapa, crear/editar
-                     en modal, soft delete) — plantilla de referencia para
-                     viajes/, cotizaciones/, reservas/
+                     en modal, soft delete) — plantilla de referencia
+    proveedores/     ✅ CRUD completo (lista, filtro por tipo) — no estaba
+                     en el plan original, se agregó porque Viajes lo
+                     necesita para elegir hotel/transportista
     viajes/
     cotizaciones/
     reservas/
 components/
   ui/        ✅ Modal, Badge (reutilizables entre módulos)
-  forms/     ✅ ClientForm (patrón a repetir por módulo)
+  forms/     ✅ ClientForm, ProviderForm (mismo patrón por módulo)
 lib/         ✅ api.ts (fetch autenticado + manejo de 401), auth.ts (sesión
-             en localStorage), clients.ts (tipos + llamadas de Clientes)
-             — cada módulo nuevo agrega su propio lib/<recurso>.ts
+             en localStorage), clients.ts, providers.ts (tipos + llamadas
+             por recurso) — cada módulo nuevo agrega su propio lib/<recurso>.ts
 ```
 
 Probado en navegador real (Playwright headless, no solo build/typecheck): login → dashboard →

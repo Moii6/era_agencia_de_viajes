@@ -48,9 +48,9 @@ export default function Home() {
         <section className="flex flex-col justify-between bg-gradient-to-br from-teal-600 via-teal-500 to-emerald-600 p-8 text-white lg:p-12">
           <div>
             <div className="mb-8 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-teal-50">
-              ERP Agencia de Viajes
+              Travify
             </div>
-            <h1 className="text-4xl font-bold tracking-tight">Gestiona clientes, viajes y reservas.</h1>
+            <h1 className="text-4xl font-bold tracking-tight">Haz que cada viaje cobre sentido.</h1>
             <p className="mt-4 max-w-md text-sm text-teal-50/90">
               Centraliza el CRM, la operación del viaje y la administración del negocio desde un único panel.
             </p>
@@ -76,7 +76,7 @@ export default function Home() {
           <div className="w-full max-w-md">
             <div className="mb-8">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-teal-600">Iniciar sesión</p>
-              <h2 className="mt-2 text-3xl font-semibold text-slate-900">Bienvenido</h2>
+              <h2 className="mt-2 text-3xl font-semibold text-slate-900">Bienvenido a Travify</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
