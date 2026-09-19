@@ -164,16 +164,38 @@ reservations/  ✅ se crea desde una Quote ACCEPTED, transiciones de estado cont
 
 ```
 app/
-  (login actual vive en /)  — considerar mover a un route group (auth)/login
-  dashboard/     ✅ básico (nombre, email, rol)
-  clientes/
-  viajes/
-  cotizaciones/
-  reservas/
-components/  layout/, forms/, tables/, modals/, ui/
-lib/         api.ts, auth.ts, formats.ts, schemas.ts
-types/       api.ts
+  page.tsx           ✅ login (vive en /, fuera del grupo protegido)
+  (app)/             ✅ route group protegido: layout.tsx hace el guard de
+                     sesión + sidebar de navegación una sola vez
+    dashboard/       ✅ básico (nombre, email, rol)
+    clientes/        ✅ CRUD completo (lista, filtro por etapa, crear/editar
+                     en modal, soft delete) — plantilla de referencia para
+                     viajes/, cotizaciones/, reservas/
+    viajes/
+    cotizaciones/
+    reservas/
+components/
+  ui/        ✅ Modal, Badge (reutilizables entre módulos)
+  forms/     ✅ ClientForm (patrón a repetir por módulo)
+lib/         ✅ api.ts (fetch autenticado + manejo de 401), auth.ts (sesión
+             en localStorage), clients.ts (tipos + llamadas de Clientes)
+             — cada módulo nuevo agrega su propio lib/<recurso>.ts
 ```
+
+Probado en navegador real (Playwright headless, no solo build/typecheck): login → dashboard →
+lista de clientes → crear → filtrar por etapa → editar → eliminar (soft delete), sin errores de
+consola. `chromium-cli` no estaba disponible en esta máquina; se usó un script de Playwright
+puntual en el scratchpad (no quedó como skill del proyecto — si se repite seguido, conviene correr
+`/run-skill-generator` para dejarlo formalizado).
+
+**Tema visual (decidido y aplicado a toda la app):** tema claro, fondo `slate-50`, tarjetas `white`
+con borde `slate-200`, texto en escala de slate (`900` títulos, `700` cuerpo, `500` metadatos), y
+**teal** como color primario (no el azul genérico original — se probaron ambos lado a lado y teal
+"tiene más personalidad" para una agencia de viajes, sin chocar con los colores semánticos de los
+badges). Badges de estado con el patrón `bg-X-100 text-X-800` mapeados por "tono" (`neutral` slate,
+`info` sky, `success` emerald, `warning` amber, `danger` rose) en `components/ui/Badge.tsx` —
+cualquier estado nuevo (viajes/cotizaciones/reservas) solo necesita agregarse a ese mapa, no
+inventar clases nuevas.
 
 ### 7.3 Reglas de negocio no negociables (backend)
 

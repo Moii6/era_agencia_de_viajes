@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+import { API_URL } from "@/lib/api";
+import { setSession } from "@/lib/auth";
 
 export default function Home() {
   const router = useRouter();
@@ -33,8 +33,7 @@ export default function Home() {
         throw new Error(data?.message ?? "Credenciales inválidas");
       }
 
-      localStorage.setItem("erp_access_token", data.accessToken);
-      localStorage.setItem("erp_user", JSON.stringify(data.user));
+      setSession(data.accessToken, data.user);
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");
@@ -44,45 +43,45 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-12">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl shadow-slate-950/50 lg:grid-cols-2">
-        <section className="flex flex-col justify-between bg-gradient-to-br from-sky-600 via-cyan-600 to-blue-700 p-8 text-white lg:p-12">
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 lg:grid-cols-2">
+        <section className="flex flex-col justify-between bg-gradient-to-br from-teal-600 via-teal-500 to-emerald-600 p-8 text-white lg:p-12">
           <div>
-            <div className="mb-8 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-sky-100">
+            <div className="mb-8 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-teal-50">
               ERP Agencia de Viajes
             </div>
             <h1 className="text-4xl font-bold tracking-tight">Gestiona clientes, viajes y reservas.</h1>
-            <p className="mt-4 max-w-md text-sm text-sky-100/90">
+            <p className="mt-4 max-w-md text-sm text-teal-50/90">
               Centraliza el CRM, la operación del viaje y la administración del negocio desde un único panel.
             </p>
           </div>
 
-          <div className="mt-10 space-y-3 text-sm text-sky-100/90">
+          <div className="mt-10 space-y-3 text-sm text-teal-50/90">
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-300" />
+              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-200" />
               Control de clientes y seguimiento
             </div>
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-300" />
+              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-200" />
               Cotizaciones y reservas conectadas
             </div>
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-300" />
+              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-200" />
               Autenticación segura por tenant y rol
             </div>
           </div>
         </section>
 
-        <section className="flex items-center justify-center bg-slate-900 p-8 lg:p-12">
+        <section className="flex items-center justify-center bg-white p-8 lg:p-12">
           <div className="w-full max-w-md">
             <div className="mb-8">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-400">Iniciar sesión</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">Bienvenido</h2>
+              <p className="text-sm font-medium uppercase tracking-[0.2em] text-teal-600">Iniciar sesión</p>
+              <h2 className="mt-2 text-3xl font-semibold text-slate-900">Bienvenido</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
                   Correo electrónico
                 </label>
                 <input
@@ -90,14 +89,14 @@ export default function Home() {
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
                   placeholder="tu@agencia.com"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">
+                <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">
                   Contraseña
                 </label>
                 <input
@@ -105,14 +104,14 @@ export default function Home() {
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
                   placeholder="••••••••"
                   required
                 />
               </div>
 
               {error ? (
-                <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                   {error}
                 </div>
               ) : null}
@@ -120,14 +119,14 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-xl bg-sky-500 px-4 py-3 font-semibold text-slate-950 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isLoading ? "Iniciando sesión..." : "Entrar"}
               </button>
             </form>
 
-            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-300">
-              <p className="font-medium text-slate-200">Credenciales de prueba</p>
+            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+              <p className="font-medium text-slate-700">Credenciales de prueba</p>
               <p className="mt-1">Email: owner@agenciadeprueba.mx</p>
               <p>Password: changeme123</p>
             </div>
