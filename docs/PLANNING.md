@@ -151,11 +151,13 @@ clients/       ✅ CRUD + soft delete, filtro por stage
 interactions/  ✅ historial por cliente (anidado en clients/:id/interactions)
 providers/     ✅ CRUD + soft delete, filtro por type
 trips/         ✅ CRUD (sin delete, usa status), con buses/, room-types/, activities/ anidados
-quotes/        — con dto/
-quote-occupancies/
-reservations/
-travelers/
-deposits/
+quotes/        ✅ CRUD (delete solo en DRAFT) + transiciones de estado controladas, con
+               occupancies/ (snapshot de precio) y occupancies/:id/activities/ anidados;
+               totales (subtotal/total) recalculados en cascada, edición bloqueada fuera de DRAFT
+reservations/  ✅ se crea desde una Quote ACCEPTED, transiciones de estado controladas, con
+               travelers/ (titular único, asiento vía SeatAssignment, valida cupo de la
+               ocupación) y deposits/ (anticipo mínimo, auto-confirma la reserva, sin
+               edición/borrado por ser registro contable) anidados; balance calculado
 ```
 
 ### 7.2 Estructura del frontend (`apps/web/src/`)
@@ -192,9 +194,9 @@ types/       api.ts
 3. ✅ Clientes + interacciones
 4. ✅ Proveedores
 5. ✅ Viajes + buses + room types + activities
-6. Cotizaciones ← **siguiente paso**
-7. Reservas + viajeros + depósitos
-8. Dashboard y navegación web más allá del login básico
+6. ✅ Cotizaciones
+7. ✅ Reservas + viajeros + depósitos
+8. Dashboard y navegación web más allá del login básico ← **siguiente paso**
 9. Polishing y validaciones de UX
 
 ### 7.5 Definición de "MVP terminado"
@@ -203,6 +205,10 @@ Se puede demostrar en una sola sesión: iniciar sesión con un usuario del tenan
 crear un viaje con buses y tipos de habitación → cotizar para ese cliente → aceptar la cotización →
 crear la reserva con viajeros → registrar un depósito inicial → ver el estado de la reserva en el
 dashboard.
+
+**✅ Todo el flujo de backend ya está probado end-to-end contra Render** (vía curl, no desde la UI
+todavía) — solo falta construir las pantallas del frontend (§7.2) para que la agencia pueda operarlo
+sin tocar la API directamente.
 
 ## 8. Estado actual del repositorio
 

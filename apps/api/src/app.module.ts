@@ -7,6 +7,8 @@ import { ClientsModule } from './clients/clients.module';
 import { InteractionsModule } from './interactions/interactions.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProvidersModule } from './providers/providers.module';
+import { QuotesModule } from './quotes/quotes.module';
+import { ReservationsModule } from './reservations/reservations.module';
 import { TenantModule } from './tenant/tenant.module';
 import { TripsModule } from './trips/trips.module';
 import { UsersModule } from './users/users.module';
@@ -22,6 +24,8 @@ import { UsersModule } from './users/users.module';
     InteractionsModule,
     ProvidersModule,
     TripsModule,
+    QuotesModule,
+    ReservationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
