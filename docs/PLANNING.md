@@ -38,13 +38,14 @@ producción se identifican tenants con carga desproporcionada.
 ## 2. Modelo de negocio y multi-tenancy
 
 - **Estrategia de aislamiento:** base de datos compartida con columna `tenant_id` en cada tabla +
-  Row-Level Security (RLS) de PostgreSQL como refuerzo a nivel de base de datos. Es la opción con
-  menor costo operativo para empezar y escala bien hasta que haya razones de negocio (compliance,
-  tenants enterprise muy grandes) para separar por esquema o base de datos.
-- **Roles iniciales:** Owner/Admin de agencia, Agente de ventas, Guía (rol de solo-operación para la
-  app móvil de seguimiento, ver §7), (más adelante: Contador, Solo lectura).
-- Cada request autenticado lleva el `tenant_id` resuelto desde la sesión/JWT; toda query pasa por
-  un middleware que inyecta el filtro de tenant — nunca se confía en un `tenant_id` que venga del cliente.
+  Row-Level Security (RLS) de PostgreSQL como refuerzo a nivel de base de datos (**pendiente de
+  implementar** — hoy el aislamiento se hace a mano, filtrando cada query de Prisma por `tenantId`).
+  Es la opción con menor costo operativo para empezar y escala bien hasta que haya razones de negocio
+  (compliance, tenants enterprise muy grandes) para separar por esquema o base de datos.
+- **Roles:** `OWNER`, `ADMIN`, `AGENT`, `GUIDE` (implementados en el enum `UserRole`). El rol Guía es
+  de solo-operación para la app móvil de seguimiento, ver §5. (Más adelante: Contador, Solo lectura.)
+- Cada request autenticado lleva el `tenantId` resuelto desde el JWT; cada query de negocio a Prisma
+  se filtra explícitamente por ese `tenantId` — nunca se confía en un `tenantId` que venga del cliente.
 
 ## 3. Entidades principales (dominio)
 
@@ -75,26 +76,23 @@ Reserva (confirmación de una Cotización aceptada, requiere anticipo para asegu
 (Fuera de alcance por ahora: Factura, Pago — ver §1)
 ```
 
-## 4. Propuesta de stack técnico
+## 4. Stack técnico
 
-| Capa | Elección | Motivo |
+| Capa | Elección | Estado |
 |---|---|---|
-| Monorepo | pnpm + Turborepo | Compartir tipos/UI entre apps, builds incrementales |
-| Frontend | Next.js (React) + TypeScript + Tailwind + shadcn/ui | Ecosistema maduro, buen DX, SSR para dashboards |
-| Backend | NestJS (Node/TypeScript) | Estructura modular con DI, guards para aislar tenant, escala bien para dominio ERP |
-| Base de datos | PostgreSQL | RLS nativo para multi-tenancy, robusto para modelos relacionales de ERP |
-| ORM | Prisma | DX fuerte, migraciones versionadas; se complementa con RLS vía políticas SQL |
-| Auth | Auth.js (Credentials + OAuth) con modelo propio de Tenant/Rol | Control total del modelo multi-tenant sin atarse a un proveedor externo de pago |
-| Jobs/colas | BullMQ + Redis | Emails, recordatorios de cotizaciones por vencer, generación de PDFs |
-| Documentos | Puppeteer o react-pdf | Generación de itinerarios/vouchers en PDF (fase 2) |
-| Infra inicial | Docker Compose local → Railway/Render | Bajo costo operativo para validar el producto antes de ir a AWS/GCP |
-| Testing | Vitest/Jest + Playwright | Unit/integration + e2e de flujos críticos (cotizar → reservar) |
-| App móvil | Expo (React Native) + TypeScript | Comparte tipos/lógica con el backend Node; distribución OTA sin pasar por review de tiendas en cada cambio |
-| Notificaciones push | Expo Push Notifications | Avisar a turista/guía cuando el guía registra un nuevo checkpoint |
-| Actualización de checkpoints | Polling corto (p. ej. cada 30-60s) o refresh manual | Alcance es solo checkpoints manuales, no tracking en vivo; no se justifica WebSockets todavía |
-
-Es una recomendación de partida, no una decisión cerrada — si tienes preferencia por otro lenguaje
-(p. ej. Python/Django) o ya usas cierta infraestructura, lo ajustamos.
+| Monorepo | pnpm + Turborepo | ✅ implementado |
+| Frontend | Next.js (React) + TypeScript + Tailwind | ✅ implementado (login + dashboard básicos) |
+| Backend | NestJS (Node/TypeScript) | ✅ implementado (auth, tenant, users) |
+| Base de datos | PostgreSQL administrado en **Render** | ✅ implementado |
+| ORM | Prisma | ✅ implementado, migración inicial aplicada |
+| Auth | NestJS + Passport + JWT (solo credenciales, sin OAuth) | ✅ implementado — reemplaza la idea inicial de Auth.js: NestJS es el dueño de la API, así que la autenticación vive ahí, no en Next.js |
+| Jobs/colas | BullMQ + Redis | Pendiente — no urgente hasta fase 2 |
+| Documentos | Puppeteer o react-pdf | Pendiente (fase 2) |
+| Infra | Render (Postgres) + Docker Compose local solo para Redis cuando se necesite | ✅ Render implementado; Redis pendiente |
+| Testing | Vitest/Jest + Playwright | Pendiente — Nest trae Jest por defecto pero sin pruebas de dominio propias |
+| App móvil | Expo (React Native) + TypeScript | Pendiente (fase 2) |
+| Notificaciones push | Expo Push Notifications | Pendiente (fase 2) |
+| Actualización de checkpoints | Polling corto o refresh manual | Pendiente (fase 2) — no se justifica WebSockets todavía |
 
 ## 5. App móvil de seguimiento de viaje
 
@@ -112,7 +110,7 @@ Alcance acotado: **no** es un cliente móvil del ERP completo, solo cubre el via
   agencia en el ERP web (o fuera del sistema, en el caso de pagos).
 - Depende del módulo de Reservas (fase 1) para existir, por lo que se ubica en fase 2 del roadmap.
 
-## 6. Roadmap por fases
+## 6. Roadmap por fases (producto)
 
 **Fase 1 — MVP (Reservas + CRM)**
 1. Fundamentos: modelo de Tenant, autenticación, roles, layout base de la app
@@ -136,41 +134,114 @@ Alcance acotado: **no** es un cliente móvil del ERP completo, solo cubre el via
 - Facturación electrónica (CFDI) — depende de que se decida incorporar pagos
 - Contabilidad — depende de facturación
 
-## 7. Estado actual del repositorio
+## 7. Plan de ejecución técnica del MVP (fase 1)
 
-El monorepo ya está inicializado con la estructura y el modelo de datos descritos arriba como punto
-de partida. Esto es lo que existe hoy:
+Complementa el roadmap de producto (§6) con el "cómo" a nivel de código. Se actualiza conforme
+avanza la implementación — lo marcado ✅ ya existe en el repo.
 
-- **Control de versiones:** `git init` hecho, rama `main`. Todo el contenido descrito abajo está en
-  *staging* (`git add -A`) pero **sin commit inicial todavía** — pendiente de confirmación.
-- **Monorepo:** pnpm workspaces + Turborepo, con `apps/*` y `packages/*` (`pnpm-workspace.yaml`,
-  `turbo.json`, `package.json` raíz con scripts `dev`/`build`/`lint`/`typecheck`/`test`).
-- **`apps/web`:** scaffold de Next.js 16 (App Router) + TypeScript + Tailwind, generado con
-  `create-next-app`. Sin autenticación ni pantallas de negocio todavía — es el punto de partida.
-- **`apps/api`:** scaffold de NestJS **10** (no la última versión: `@nestjs/cli` más reciente
-  requiere Node ≥20.12/21.7 y el entorno de desarrollo tiene Node 20.11, así que se fijó v10 para que
-  el CLI funcionara). Ya declara `@erp/db` como dependencia de workspace; sin módulos de dominio
-  (Trip, Quote, Reservation, etc.) implementados todavía.
-- **`packages/db`:** `schema.prisma` con **todas** las entidades de [DATA_MODEL.md](DATA_MODEL.md)
-  (Tenant, User, Client, Trip, Bus, SeatAssignment, RoomType, Activity, Quote, QuoteOccupancy,
-  Reservation, Traveler, Deposit, Checkpoint, etc.), cliente Prisma generado y funcionando desde
-  `@erp/db`. El proceso de escribir el schema detectó y corrigió una relación inversa faltante
-  (`Tenant.interactions`) gracias al validador de Prisma. **No se ha corrido ninguna migración**
-  (`prisma migrate dev`) contra una base de datos real todavía — falta levantar Postgres y aplicar
-  el primer `migrate dev` para generar la migración inicial.
-- **`docker-compose.yml`:** Postgres 16 + Redis 7 para desarrollo local — definido pero no levantado
-  (`docker compose up -d` pendiente de ejecutarse).
-- **Verificado y pasando:** `pnpm install`, `pnpm db:generate`, `pnpm typecheck` y `pnpm lint` en las
-  3 workspaces (vía Turborepo), y `next build` en `apps/web`.
-- **Aún no implementado / no configurado:** autenticación (Auth.js), políticas RLS de Postgres,
-  shadcn/ui, colas con BullMQ, generación de PDFs, la app móvil (Expo), y el setup de testing
-  (Vitest/Playwright — el scaffold de Nest trae Jest por defecto pero sin pruebas de dominio propias).
+### 7.1 Estructura del backend (`apps/api/src/`)
 
-## 8. Preguntas abiertas para siguientes pasos
+```
+app.module.ts, main.ts
+auth/          ✅ login, /me, JWT, guards de rol
+prisma/        ✅ PrismaModule/PrismaService
+tenant/        ✅ GET /tenants/me
+users/         ✅ CRUD básico de usuarios del tenant
+clients/       ✅ CRUD + soft delete, filtro por stage
+interactions/  ✅ historial por cliente (anidado en clients/:id/interactions)
+providers/     ✅ CRUD + soft delete, filtro por type
+trips/         ✅ CRUD (sin delete, usa status), con buses/, room-types/, activities/ anidados
+quotes/        — con dto/
+quote-occupancies/
+reservations/
+travelers/
+deposits/
+```
+
+### 7.2 Estructura del frontend (`apps/web/src/`)
+
+```
+app/
+  (login actual vive en /)  — considerar mover a un route group (auth)/login
+  dashboard/     ✅ básico (nombre, email, rol)
+  clientes/
+  viajes/
+  cotizaciones/
+  reservas/
+components/  layout/, forms/, tables/, modals/, ui/
+lib/         api.ts, auth.ts, formats.ts, schemas.ts
+types/       api.ts
+```
+
+### 7.3 Reglas de negocio no negociables (backend)
+
+1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
+2. Un usuario solo debe acceder a recursos del tenant al que pertenece.
+3. La cotización debe conservar snapshot de los precios en `QuoteOccupancy`.
+4. La reserva debe derivarse de una cotización `ACCEPTED`.
+5. La reserva debe tener un anticipo mínimo definido por `Trip.minimumDepositAmount`.
+6. Cada viajero debe tener un único asiento en un bus del viaje (`SeatAssignment`).
+7. Los viajes deben manejar capacidad total (turistas + guías) consistente con sus autobuses.
+8. Los estados de reserva y cotización deben transitar de manera controlada (no saltos arbitrarios).
+9. Cada `Interaction` debe reportar quién la registró y cuándo.
+
+### 7.4 Orden recomendado de implementación
+
+1. ✅ Base de datos (Render) + Prisma migrate + seed
+2. ✅ Auth + JWT + roles + tenant (login, `/me`, tenant, users)
+3. ✅ Clientes + interacciones
+4. ✅ Proveedores
+5. ✅ Viajes + buses + room types + activities
+6. Cotizaciones ← **siguiente paso**
+7. Reservas + viajeros + depósitos
+8. Dashboard y navegación web más allá del login básico
+9. Polishing y validaciones de UX
+
+### 7.5 Definición de "MVP terminado"
+
+Se puede demostrar en una sola sesión: iniciar sesión con un usuario del tenant → crear un cliente →
+crear un viaje con buses y tipos de habitación → cotizar para ese cliente → aceptar la cotización →
+crear la reserva con viajeros → registrar un depósito inicial → ver el estado de la reserva en el
+dashboard.
+
+## 8. Estado actual del repositorio
+
+- **Git:** repo en `https://github.com/Moii6/era_agencia_de_viajes`, rama `main`, historial:
+  scaffold inicial → migración inicial de Prisma → módulo de auth (JWT) → base de auth + tenant/users
+  + login frontend. Todo commiteado y sincronizado con GitHub.
+- **`apps/web`:** login funcional contra la API + dashboard básico (nombre/email/rol, logout).
+  Token guardado en `localStorage` — aceptable para esta etapa, revisar antes de tener usuarios reales.
+- **`apps/api`:** `PrismaModule`, `AuthModule` (`POST /auth/login`, `GET /auth/me`), `TenantModule`
+  (`GET /tenants/me`), `UsersModule` (`GET /users`, `GET /users/me`, `POST /users`) — todos probados
+  end-to-end, incluido el build de producción compilado (`nest build` + `node dist/main.js`), no solo
+  el modo dev.
+- **`packages/db`:** schema completo, migración inicial aplicada, seed con tenant + usuario Owner de
+  prueba (`owner@agenciadeprueba.mx`).
+- **Base de datos:** migrada a **Render** (Postgres administrado) — es la fuente de verdad compartida
+  entre equipos de desarrollo. El Postgres local (Postgres.app) ya no se usa para este proyecto.
+- **`docker-compose.yml`:** ya no es el plan para Postgres (se mueve a Render); se mantiene solo para
+  Redis cuando se necesite (fase 2, BullMQ).
+- **Verificado:** `pnpm install`, `db:generate`, `typecheck`, `lint` y `build` pasan limpio en las 3
+  workspaces vía Turborepo.
+- **Aún no implementado:** módulos de negocio del MVP (clients, trips, quotes, reservations, etc.),
+  RLS de Postgres, shadcn/ui, BullMQ/Redis, generación de PDFs, app móvil (Expo), testing automatizado.
+
+### Checklist de migración a Render — completado
+
+- [x] Crear el servicio PostgreSQL en Render
+- [x] Obtener el connection string (externo, no el interno — el interno solo resuelve entre
+      servicios de Render, no desde una máquina de desarrollo)
+- [x] Actualizar `packages/db/.env` y `apps/api/.env` con la nueva `DATABASE_URL`
+- [x] Migraciones y seed ya estaban aplicados contra esta base (trabajo previo de la otra máquina)
+- [x] Verificar login end-to-end contra la base de Render — funciona
+- [x] Confirmar que la base local de Postgres.app ya no es la fuente de verdad
+
+Ver [RENDER_PRISMA_SETUP.md](RENDER_PRISMA_SETUP.md) y [DB_REBUILD_PLAYBOOK.md](DB_REBUILD_PLAYBOOK.md)
+para el detalle operativo de Render (esos quedan como runbooks aparte, no se consolidan aquí).
+
+## 9. Preguntas abiertas para siguientes pasos
 
 - Sin agencia piloto por ahora: el desarrollo va guiado por este documento y se valida con datos
   de prueba propios; conviene reconfirmar el orden de prioridades del roadmap conforme avance el MVP.
 - Cuando se retome el tema de pagos/facturación más adelante, será buen momento para definir PAC
   y flujo de cobro — no urgente hoy.
-- **Commit inicial:** el contenido del repo está listo en staging pero no se ha confirmado el primer
-  commit (ver §7) — falta que se apruebe explícitamente.

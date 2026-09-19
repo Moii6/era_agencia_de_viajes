@@ -21,6 +21,9 @@ export default function DashboardPage() {
       return;
     }
 
+    // Reading localStorage on mount to seed client-only state is the
+    // valid case for this pattern; eslint's new rule flags it regardless.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUser(JSON.parse(storedUser));
   }, [router]);
 
