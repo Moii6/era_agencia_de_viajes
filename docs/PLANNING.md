@@ -177,19 +177,28 @@ app/
                      cambio de estado y 3 secciones anidadas (buses, tipos
                      de habitación, actividades), cada una con su propio
                      modal de alta/edición/borrado
-    cotizaciones/
+    cotizaciones/    ✅ lista (filtro por estado) + detalle con edición
+                     (notas/vigencia), transiciones de estado controladas
+                     (mismo mapa que el backend, DRAFT→SENT→ACCEPTED/
+                     REJECTED/EXPIRED), borrado (solo DRAFT), y sección de
+                     ocupaciones con actividades anidadas — todo editable
+                     solo mientras la cotización está en DRAFT
     reservas/
 components/
   ui/        ✅ Modal (soporta size md/lg), Badge (reutilizables entre módulos)
   forms/     ✅ ClientForm, ProviderForm, TripForm, BusForm, RoomTypeForm,
-             ActivityForm (mismo patrón por módulo)
+             ActivityForm, QuoteForm (alta), QuoteEditForm (notas/vigencia),
+             OccupancyForm (mismo patrón por módulo)
   trips/     ✅ BusesSection, RoomTypesSection, ActivitiesSection (listas
              autocontenidas usadas en el detalle de viaje)
+  quotes/    ✅ OccupanciesSection (ocupaciones + alta/borrado de actividades
+             inline por ocupación, respeta el snapshot de precios del backend)
 lib/         ✅ api.ts (fetch autenticado + manejo de 401), auth.ts (sesión
-             en localStorage), clients.ts, providers.ts, trips.ts (tipos +
-             llamadas por recurso), formats.ts (formatDate compartido,
-             fuerza timeZone: "UTC" para evitar el bug de día -1) — cada
-             módulo nuevo agrega su propio lib/<recurso>.ts
+             en localStorage), clients.ts, providers.ts, trips.ts, quotes.ts
+             (tipos + llamadas por recurso, incluye QUOTE_TRANSITIONS
+             espejo del mapa del backend para la UI), formats.ts (formatDate
+             compartido, fuerza timeZone: "UTC" para evitar el bug de día -1)
+             — cada módulo nuevo agrega su propio lib/<recurso>.ts
 ```
 
 Probado en navegador real (Playwright headless, no solo build/typecheck): login → dashboard →
@@ -204,6 +213,13 @@ Bug encontrado y corregido durante la revisión de capturas de la pantalla de Vi
 (`departureDate`/`returnDate`) se mostraban un día antes del valor guardado, porque
 `toLocaleDateString` sin `timeZone: "UTC"` convierte la medianoche UTC a la zona horaria local del
 navegador. Corregido centralizando el formateo en `lib/formats.ts`.
+
+También probado el flujo completo de Cotizaciones: crear cotización (cliente + viaje) → agregar
+una ocupación → intentar una ocupación que excede la capacidad del tipo de habitación (rechazada
+por el backend con 400, mensaje mostrado correctamente en el formulario) → agregar una ocupación
+válida → agregar una actividad a la ocupación (recalcula subtotal/total) → cambiar estado a SENT →
+confirmar que "Eliminar" y los controles de edición desaparecen al salir de DRAFT → volver a la
+lista y ver el estado y total actualizados. Sin errores de consola.
 
 **Tema visual (decidido y aplicado a toda la app):** tema claro, fondo `slate-50`, tarjetas `white`
 con borde `slate-200`, texto en escala de slate (`900` títulos, `700` cuerpo, `500` metadatos), y
@@ -235,8 +251,9 @@ inventar clases nuevas.
 5. ✅ Viajes + buses + room types + activities
 6. ✅ Cotizaciones
 7. ✅ Reservas + viajeros + depósitos
-8. Dashboard y navegación web más allá del login básico ← **siguiente paso**
-9. Polishing y validaciones de UX
+8. ✅ Frontend: dashboard, clientes, proveedores, viajes, cotizaciones
+9. Frontend: reservas (viajeros, asientos, depósitos) ← **siguiente paso**
+10. Polishing y validaciones de UX
 
 ### 7.5 Definición de "MVP terminado"
 
