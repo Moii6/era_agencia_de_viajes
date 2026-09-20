@@ -63,7 +63,7 @@ CRM
 
 Viaje (Trip — creado por la agencia: fechas/puntos de salida/retorno, cupo máximo, transporte y hospedaje)
  ├─ Autobús (uno o más, con su capacidad de asientos)
- ├─ Tipo de habitación (con precio por adulto/menor, específico del viaje)
+ ├─ Tipo de habitación (con tarifa plana por noche, específico del viaje)
  ├─ Actividad opcional de itinerario (con o sin costo extra)
  └─ Checkpoint de seguimiento (fase 2, lo registra el Guía asignado al viaje)
 
@@ -249,6 +249,17 @@ estado pasa automáticamente a CONFIRMED sin intervención manual (igual que el 
 un segundo anticipo y ver el saldo recalculado → mover el estado a COMPLETED. También se verificó
 que una reserva cancelada no reabre sus controles de edición (CANCELLED es un estado terminal, sin
 transiciones ni ediciones disponibles, igual que el backend). Sin errores de consola.
+
+**Cambio de modelo de precios de habitación (2026-09-20):** `RoomType.pricePerAdult`/`pricePerMinor`
+se reemplazaron por un solo `pricePerNight` — el precio de una habitación es una tarifa plana por
+noche, igual sin importar si la ocupan adultos o menores. `QuoteOccupancy.subtotal` ahora es
+`unitPricePerNight × noches` (noches = `trip.returnDate − trip.departureDate`); `adults`/`minors`
+en la ocupación siguen existiendo pero solo para validar contra `maxOccupancy` y contar viajeros,
+ya no afectan el precio. Migrado a mano contra Render (`prisma migrate dev` no corre en modo no
+interactivo) y las cotizaciones/ocupaciones existentes se recalcularon con un script puntual para
+que sus totales quedaran consistentes con la nueva fórmula — verificado que una cotización previa
+a la migración sigue mostrando el total correcto tras el recálculo. Probado también el cálculo
+completo end-to-end: habitación a $1000/noche en un viaje de 4 noches → ocupación → total $4000.
 
 **Tema visual (decidido y aplicado a toda la app):** tema claro, fondo `slate-50`, tarjetas `white`
 con borde `slate-200`, texto en escala de slate (`900` títulos, `700` cuerpo, `500` metadatos), y

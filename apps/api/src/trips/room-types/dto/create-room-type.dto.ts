@@ -22,11 +22,7 @@ export class CreateRoomTypeDto {
 
   @IsNumber()
   @Min(0)
-  pricePerAdult: number;
-
-  @IsNumber()
-  @Min(0)
-  pricePerMinor: number;
+  pricePerNight: number;
 
   @IsOptional()
   @IsInt()

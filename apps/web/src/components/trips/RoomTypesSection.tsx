@@ -77,8 +77,7 @@ export function RoomTypesSection({ tripId }: { tripId: string }) {
               <div>
                 <p className="text-sm font-medium text-slate-900">{roomType.name}</p>
                 <p className="text-xs text-slate-500">
-                  Hasta {roomType.maxOccupancy} personas · Adulto ${roomType.pricePerAdult} · Menor $
-                  {roomType.pricePerMinor}
+                  Hasta {roomType.maxOccupancy} personas · ${roomType.pricePerNight} por noche
                   {roomType.quantityAvailable != null ? ` · ${roomType.quantityAvailable} disponibles` : ""}
                 </p>
                 {roomType.characteristics ? (

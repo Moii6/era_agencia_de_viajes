@@ -50,9 +50,16 @@ export class OccupanciesService {
       );
     }
 
-    const unitPriceAdult = Number(roomType.pricePerAdult);
-    const unitPriceMinor = Number(roomType.pricePerMinor);
-    const subtotal = dto.adults * unitPriceAdult + dto.minors * unitPriceMinor;
+    const trip = await this.prisma.trip.findUniqueOrThrow({
+      where: { id: quote.tripId },
+      select: { departureDate: true, returnDate: true },
+    });
+    const nights = this.nightsBetween(trip.departureDate, trip.returnDate);
+
+    const unitPricePerNight = Number(roomType.pricePerNight);
+    // Room cost is per night, flat — the same whether adults or minors
+    // occupy it — so it never depends on the adults/minors headcount.
+    const subtotal = unitPricePerNight * nights;
 
     const occupancy = await this.prisma.quoteOccupancy.create({
       data: {
@@ -61,8 +68,7 @@ export class OccupanciesService {
         label: dto.label,
         adults: dto.adults,
         minors: dto.minors,
-        unitPriceAdult,
-        unitPriceMinor,
+        unitPricePerNight,
         subtotal,
       },
     });
@@ -98,17 +104,12 @@ export class OccupanciesService {
       );
     }
 
-    const subtotal =
-      adults * Number(occupancy.unitPriceAdult) +
-      minors * Number(occupancy.unitPriceMinor);
-
-    const updated = await this.prisma.quoteOccupancy.update({
+    // adults/minors only affect capacity/headcount tracking here — the
+    // room's subtotal is a flat per-night rate and doesn't change with them.
+    return this.prisma.quoteOccupancy.update({
       where: { id: occupancyId },
-      data: { label: dto.label, adults, minors, subtotal },
+      data: { label: dto.label, adults, minors },
     });
-
-    await this.quotesService.recalculateTotals(quoteId);
-    return updated;
   }
 
   async remove(tenantId: string, quoteId: string, occupancyId: string) {
@@ -131,5 +132,10 @@ export class OccupanciesService {
       throw new NotFoundException('Ocupación no encontrada');
     }
     return occupancy;
+  }
+
+  private nightsBetween(departureDate: Date, returnDate: Date) {
+    const ms = returnDate.getTime() - departureDate.getTime();
+    return Math.max(1, Math.round(ms / (24 * 60 * 60 * 1000)));
   }
 }
