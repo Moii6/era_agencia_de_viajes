@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/viajes", label: "Viajes" },
   { href: "/cotizaciones", label: "Cotizaciones" },
   { href: "/reservas", label: "Reservas" },
+  { href: "/agencia", label: "Mi Agencia" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

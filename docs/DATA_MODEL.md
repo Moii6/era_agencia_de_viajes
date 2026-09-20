@@ -101,7 +101,19 @@ Reservation (confirmación de una Quote ACCEPTED)
 
 ## 4. Tablas (campos principales)
 
-### Tenant / User / Client / Interaction
+### Tenant
+Base (`name`, `slug`, `status`) sin cambios respecto a v1. Se agregaron campos de perfil de la
+agencia, útiles para quien administra el ERP (hoy no existe rol/flujo de "admin de plataforma" —
+solo el propio OWNER/ADMIN del tenant puede editar estos datos vía `PATCH /tenants/me`):
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| representativeName | string? | Dueño o representante de la agencia |
+| address | string? | |
+| contacts | string[] | Teléfonos/emails sueltos, sin etiquetar; mismo patrón que `Provider.contacts` |
+| notes | text? | |
+
+### User / Client / Interaction
 Sin cambios respecto a v1 (ver historial). Se mantiene `role` de User con `GUIDE` para fase 2.
 
 ### Provider *(catálogo opcional)*
@@ -423,12 +435,16 @@ enum CheckpointType {
 }
 
 model Tenant {
-  id        String       @id @default(uuid())
-  name      String
-  slug      String       @unique
-  status    TenantStatus @default(ACTIVE)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id                 String       @id @default(uuid())
+  name               String
+  slug               String       @unique
+  status             TenantStatus @default(ACTIVE)
+  representativeName String?
+  address            String?
+  contacts           String[]     @default([])
+  notes              String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   users        User[]
   clients      Client[]

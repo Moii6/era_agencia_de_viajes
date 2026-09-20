@@ -167,12 +167,12 @@ app/
   page.tsx           ✅ login (vive en /, fuera del grupo protegido)
   (app)/             ✅ route group protegido: layout.tsx hace el guard de
                      sesión + sidebar de navegación una sola vez
-    dashboard/       ✅ datos de sesión (nombre, email, rol) + tarjeta de
-                     "Viaje en curso" (rango departureDate–returnDate cubre
-                     hoy) que cae a "Próximo viaje" (el PUBLISHED más
-                     cercano) si no hay ninguno en curso, y tarjeta de
-                     "Último viaje creado" (el más reciente por createdAt,
-                     sin filtrar por estado)
+    dashboard/       ✅ tarjeta de "Viaje en curso" (rango departureDate–
+                     returnDate cubre hoy) que cae a "Próximo viaje" (el
+                     PUBLISHED más cercano) si no hay ninguno en curso, y
+                     tarjeta de "Último viaje creado" (el más reciente por
+                     createdAt, sin filtrar por estado) — ya no repite
+                     nombre/email/rol, que ya viven en el pie del sidebar
     clientes/        ✅ CRUD completo (lista, filtro por etapa, crear/editar
                      en modal, soft delete) — plantilla de referencia
     proveedores/     ✅ CRUD completo (lista, filtro por tipo) — no estaba
@@ -196,12 +196,18 @@ app/
                      titular y asignación de asiento por autobús) y
                      sección de anticipos (solo alta, sin edición/borrado
                      — es un registro contable)
+    agencia/         ✅ perfil del tenant (representante, dirección,
+                     contactos, notas, contador de usuarios/clientes/viajes)
+                     — el botón "Editar" solo se muestra si el rol de sesión
+                     es OWNER o ADMIN (PATCH /tenants/me es solo para esos
+                     roles); primera pantalla del frontend con gating de UI
+                     por rol
 components/
   ui/        ✅ Modal (soporta size md/lg), Badge (reutilizables entre módulos)
   forms/     ✅ ClientForm, ProviderForm, TripForm, BusForm, RoomTypeForm,
              ActivityForm, QuoteForm (alta), QuoteEditForm (notas/vigencia),
-             OccupancyForm, ReservationForm (alta), TravelerForm, DepositForm
-             (mismo patrón por módulo)
+             OccupancyForm, ReservationForm (alta), TravelerForm, DepositForm,
+             TenantForm (mismo patrón por módulo)
   trips/     ✅ BusesSection, RoomTypesSection, ActivitiesSection (listas
              autocontenidas usadas en el detalle de viaje)
   quotes/    ✅ OccupanciesSection (ocupaciones + alta/borrado de actividades
@@ -209,7 +215,8 @@ components/
   reservations/ ✅ TravelersSection (viajeros + asignación de asiento inline
              por autobús), DepositsSection (anticipos, marca el inicial)
 lib/         ✅ api.ts (fetch autenticado + manejo de 401), auth.ts (sesión
-             en localStorage), clients.ts, providers.ts, trips.ts, quotes.ts,
+             en localStorage, incluye el rol usado para gating de UI),
+             clients.ts, providers.ts, trips.ts, quotes.ts, tenant.ts,
              reservations.ts (tipos + llamadas por recurso, incluye
              QUOTE_TRANSITIONS y RESERVATION_TRANSITIONS espejo de los mapas
              del backend para la UI), formats.ts (formatDate compartido,
@@ -292,6 +299,17 @@ claro tiene su contraparte `dark:` al lado, sin excepciones. Verificado con Play
 `colorScheme: "dark"` en cada pantalla y flujo de detalle, y con un control en `colorScheme:
 "light"` para confirmar que el modo claro no se alteró. Antes de expandirlo a toda la app, se
 probó primero solo en Clientes para validar la paleta — ver `git log` para ese commit intermedio.
+
+**Perfil del tenant / pantalla "Mi Agencia" (2026-09-20):** hasta ahora `Tenant` solo tenía
+`name`/`slug`/`status` y no existía ningún endpoint de escritura (ni el propio OWNER podía editar
+los datos de su agencia). Se agregaron `representativeName`, `address`, `contacts` (mismo patrón de
+arreglo sin etiquetar que `Provider.contacts`) y `notes`, más `PATCH /tenants/me` (solo OWNER/ADMIN)
+para editarlos. Alcance decidido explícitamente con el usuario: solo esto — **no** se construyó
+ningún flujo para crear tenants nuevos ni un rol de "administrador de plataforma" por encima de
+OWNER, porque ese concepto no existe todavía en la app (haría falta decidir autenticación cross-
+tenant, un rol nuevo, etc. — se dejó como decisión futura explícita). La pantalla `agencia/` es la
+primera con gating de UI por rol: el botón "Editar" se oculta si `session.role` no es OWNER/ADMIN,
+verificado en Playwright simulando un rol AGENT vía localStorage (0 botones "Editar" renderizados).
 
 ### 7.3 Reglas de negocio no negociables (backend)
 
