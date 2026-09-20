@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -6,6 +7,11 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+
+// The agency can have at most 2 OWNER accounts. There's no user-editing
+// capability yet (no role changes, no deactivation), so this cap is
+// enforced only here, at creation time.
+const MAX_OWNERS_PER_TENANT = 2;
 
 @Injectable()
 export class UsersService {
@@ -56,6 +62,17 @@ export class UsersService {
 
     if (existingUser) {
       throw new ConflictException('El email ya está registrado');
+    }
+
+    if (dto.role === 'OWNER') {
+      const ownerCount = await this.prisma.user.count({
+        where: { tenantId, role: 'OWNER', status: 'ACTIVE' },
+      });
+      if (ownerCount >= MAX_OWNERS_PER_TENANT) {
+        throw new BadRequestException(
+          `Ya existen ${MAX_OWNERS_PER_TENANT} usuarios con rol OWNER en esta agencia`,
+        );
+      }
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);

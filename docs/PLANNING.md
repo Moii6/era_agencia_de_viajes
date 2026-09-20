@@ -316,6 +316,14 @@ tenant, un rol nuevo, etc. — se dejó como decisión futura explícita). La pa
 primera con gating de UI por rol: el botón "Editar" se oculta si `session.role` no es OWNER/ADMIN,
 verificado en Playwright simulando un rol AGENT vía localStorage (0 botones "Editar" renderizados).
 
+**Módulo de registro de usuarios en "Mi Agencia" (2026-09-20):** agrega la sección "Usuarios"
+(listar + registrar) directamente en `agencia/`, usando los endpoints de `users` que ya existían
+sin frontend. Confirmado explícitamente con el usuario: no hay edición de usuarios existentes, es
+solo alta — y **máximo 2 usuarios con rol OWNER por tenant**, validado en `UsersService.create`
+(cuenta OWNERs activos antes de crear; `BadRequestException` si ya hay 2). Verificado contra Render
+por curl (2do OWNER → 201, 3er OWNER → 400 "Ya existen 2 usuarios con rol OWNER en esta agencia") y
+en el formulario real de la UI viendo ese mismo mensaje inline.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
@@ -327,6 +335,9 @@ verificado en Playwright simulando un rol AGENT vía localStorage (0 botones "Ed
 7. Los viajes deben manejar capacidad total (turistas + guías) consistente con sus autobuses.
 8. Los estados de reserva y cotización deben transitar de manera controlada (no saltos arbitrarios).
 9. Cada `Interaction` debe reportar quién la registró y cuándo.
+10. Máximo 2 usuarios con rol `OWNER` por tenant (validado en `UsersService.create`, ver 2026-09-20
+    abajo). No existe edición de usuarios (rol, estado, etc.) — solo alta — así que esta es la única
+    puerta donde se puede violar el límite.
 
 ### 7.4 Orden recomendado de implementación
 
