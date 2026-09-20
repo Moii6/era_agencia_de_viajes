@@ -54,11 +54,11 @@ export default function ReservationDetailPage() {
   }
 
   if (error && !reservation) {
-    return <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>;
+    return <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300">{error}</div>;
   }
 
   if (!reservation || !quote) {
-    return <p className="text-sm text-slate-500">Cargando...</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>;
   }
 
   const nextStatuses = RESERVATION_TRANSITIONS[reservation.status];
@@ -75,17 +75,17 @@ export default function ReservationDetailPage() {
 
   return (
     <div>
-      <button onClick={() => router.push("/reservas")} className="mb-4 text-sm text-slate-500 hover:text-slate-700">
+      <button onClick={() => router.push("/reservas")} className="mb-4 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
         ← Reservas
       </button>
 
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-slate-900">{reservation.quote.client.name}</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{reservation.quote.client.name}</h1>
             <Badge value={reservation.status} />
           </div>
-          <p className="mt-1 text-slate-500">
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
             {reservation.quote.trip.name} · Salida {formatDate(reservation.quote.trip.departureDate)}
           </p>
         </div>
@@ -93,7 +93,7 @@ export default function ReservationDetailPage() {
           <select
             value=""
             onChange={(e) => handleStatusChange(e.target.value as ReservationStatus)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none"
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:focus:border-teal-500"
           >
             <option value="" disabled>
               Cambiar estado...
@@ -108,34 +108,34 @@ export default function ReservationDetailPage() {
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300">
           {error}
         </div>
       ) : null}
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Cliente</p>
-          <p className="mt-2 text-sm text-slate-900">{reservation.quote.client.name}</p>
-          <p className="text-sm text-slate-500">{reservation.quote.client.email ?? "Sin email"}</p>
-          <p className="text-sm text-slate-500">{reservation.quote.client.phone ?? "Sin teléfono"}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Cliente</p>
+          <p className="mt-2 text-sm text-slate-900 dark:text-slate-100">{reservation.quote.client.name}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{reservation.quote.client.email ?? "Sin email"}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{reservation.quote.client.phone ?? "Sin teléfono"}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Viaje</p>
-          <p className="mt-2 text-sm text-slate-900">{reservation.quote.trip.name}</p>
-          <p className="text-sm text-slate-500">Salida: {formatDate(reservation.quote.trip.departureDate)}</p>
-          <p className="text-sm text-slate-500">Anticipo mínimo: ${reservation.quote.trip.minimumDepositAmount}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Viaje</p>
+          <p className="mt-2 text-sm text-slate-900 dark:text-slate-100">{reservation.quote.trip.name}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Salida: {formatDate(reservation.quote.trip.departureDate)}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Anticipo mínimo: ${reservation.quote.trip.minimumDepositAmount}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Balance</p>
-          <p className="mt-2 text-sm text-slate-700">Total: ${reservation.quote.total}</p>
-          <p className="text-sm text-slate-700">Anticipado: ${reservation.depositsSum}</p>
-          <p className="text-sm font-semibold text-slate-900">Saldo: ${reservation.balance}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Balance</p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">Total: ${reservation.quote.total}</p>
+          <p className="text-sm text-slate-700 dark:text-slate-300">Anticipado: ${reservation.depositsSum}</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Saldo: ${reservation.balance}</p>
         </div>
       </div>
 
       <div className="mt-8 space-y-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <TravelersSection
             reservationId={reservation.id}
             travelers={reservation.travelers}
@@ -144,7 +144,7 @@ export default function ReservationDetailPage() {
             onChange={load}
           />
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <DepositsSection
             reservationId={reservation.id}
             deposits={reservation.deposits}

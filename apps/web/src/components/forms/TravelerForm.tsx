@@ -5,8 +5,8 @@ import { ApiError } from "@/lib/api";
 import { Traveler, TravelerInput, TravelerType, TravelerUpdateInput } from "@/lib/reservations";
 
 const inputClass =
-  "w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none";
-const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
+  "w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-teal-500";
+const labelClass = "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
 
 export type OccupancyOption = { id: string; label: string; disabled: boolean };
 
@@ -68,7 +68,7 @@ export function TravelerForm({ traveler, occupancyOptions, onSubmit, onCancel }:
           Ocupación *
         </label>
         {traveler ? (
-          <p className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600">
+          <p className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
             {occupancyOptions.find((o) => o.id === traveler.quoteOccupancyId)?.label ?? "—"}
           </p>
         ) : (
@@ -153,12 +153,12 @@ export function TravelerForm({ traveler, occupancyOptions, onSubmit, onCancel }:
         />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
         <input
           type="checkbox"
           checked={isHolder}
           onChange={(e) => setIsHolder(e.target.checked)}
-          className="h-4 w-4 rounded border-slate-300 accent-teal-600 focus:ring-teal-600"
+          className="h-4 w-4 rounded border-slate-300 accent-teal-600 focus:ring-teal-600 dark:border-slate-600 dark:accent-teal-500"
         />
         Es el titular de la reserva
       </label>
@@ -189,21 +189,21 @@ export function TravelerForm({ traveler, occupancyOptions, onSubmit, onCancel }:
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300">{error}</div>
       ) : null}
 
       <div className="flex justify-end gap-3 pt-2">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isSaving}
-          className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-70"
+          className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-teal-500 dark:hover:bg-teal-400"
         >
           {isSaving ? "Guardando..." : "Guardar"}
         </button>

@@ -10,21 +10,23 @@ function TripCard({ label, trip, emptyMessage }: { label: string; trip: Trip | n
   const router = useRouter();
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">{label}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">{label}</p>
       {trip ? (
         <button onClick={() => router.push(`/viajes/${trip.id}`)} className="mt-3 block w-full text-left">
           <div className="flex items-center gap-2">
-            <p className="text-lg font-semibold text-slate-900">{trip.name}</p>
+            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{trip.name}</p>
             <Badge value={trip.status} />
           </div>
-          <p className="mt-1 text-sm text-slate-500">{trip.destination ?? "Sin destino especificado"}</p>
-          <p className="mt-2 text-sm text-slate-700">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {trip.destination ?? "Sin destino especificado"}
+          </p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
             {formatDate(trip.departureDate)} — {formatDate(trip.returnDate)}
           </p>
         </button>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">{emptyMessage}</p>
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{emptyMessage}</p>
       )}
     </div>
   );
@@ -61,11 +63,11 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <p className="text-sm uppercase tracking-[0.2em] text-teal-600">Dashboard</p>
-      <h1 className="mt-2 text-3xl font-bold text-slate-900">Bienvenido</h1>
+      <p className="text-sm uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400">Dashboard</p>
+      <h1 className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">Bienvenido</h1>
 
       {trips === null ? (
-        <p className="mt-8 text-sm text-slate-500">Cargando viajes...</p>
+        <p className="mt-8 text-sm text-slate-500 dark:text-slate-400">Cargando viajes...</p>
       ) : (
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           <TripCard

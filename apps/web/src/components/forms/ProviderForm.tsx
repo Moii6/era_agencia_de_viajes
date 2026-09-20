@@ -11,8 +11,8 @@ const TYPE_OPTIONS: { value: ProviderType; label: string }[] = [
 ];
 
 const inputClass =
-  "w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none";
-const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
+  "w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-teal-500";
+const labelClass = "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
 
 type ProviderFormProps = {
   provider?: Provider;
@@ -118,7 +118,7 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
                 type="button"
                 onClick={() => removeContact(index)}
                 aria-label="Quitar contacto"
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
               >
                 ✕
               </button>
@@ -128,7 +128,7 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
         <button
           type="button"
           onClick={() => setContacts([...contacts, ""])}
-          className="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+          className="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           + Agregar contacto
         </button>
@@ -148,21 +148,21 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300">{error}</div>
       ) : null}
 
       <div className="flex justify-end gap-3 pt-2">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isSaving}
-          className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-70"
+          className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-teal-500 dark:hover:bg-teal-400"
         >
           {isSaving ? "Guardando..." : "Guardar"}
         </button>

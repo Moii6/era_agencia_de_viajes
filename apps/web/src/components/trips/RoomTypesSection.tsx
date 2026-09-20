@@ -49,39 +49,39 @@ export function RoomTypesSection({ tripId }: { tripId: string }) {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900">Tipos de habitación</h3>
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Tipos de habitación</h3>
         <button
           onClick={() => {
             setEditingRoomType(null);
             setModalMode("create");
           }}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           + Agregar
         </button>
       </div>
 
-      {error ? <p className="mt-2 text-sm text-rose-700">{error}</p> : null}
+      {error ? <p className="mt-2 text-sm text-rose-700 dark:text-rose-400">{error}</p> : null}
 
       <div className="mt-3 space-y-2">
         {roomTypes === null ? (
-          <p className="text-sm text-slate-500">Cargando...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>
         ) : roomTypes.length === 0 ? (
-          <p className="text-sm text-slate-500">Sin tipos de habitación todavía.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Sin tipos de habitación todavía.</p>
         ) : (
           roomTypes.map((roomType) => (
             <div
               key={roomType.id}
-              className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+              className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60"
             >
               <div>
-                <p className="text-sm font-medium text-slate-900">{roomType.name}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{roomType.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Hasta {roomType.maxOccupancy} personas · ${roomType.pricePerNight} por noche
                   {roomType.quantityAvailable != null ? ` · ${roomType.quantityAvailable} disponibles` : ""}
                 </p>
                 {roomType.characteristics ? (
-                  <p className="mt-1 text-xs text-slate-500">{roomType.characteristics}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{roomType.characteristics}</p>
                 ) : null}
               </div>
               <div className="flex gap-2">
@@ -90,13 +90,13 @@ export function RoomTypesSection({ tripId }: { tripId: string }) {
                     setEditingRoomType(roomType);
                     setModalMode("edit");
                   }}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                 >
                   Editar
                 </button>
                 <button
                   onClick={() => handleDelete(roomType)}
-                  className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                  className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-800 dark:text-rose-300 dark:hover:bg-rose-500/10"
                 >
                   Eliminar
                 </button>

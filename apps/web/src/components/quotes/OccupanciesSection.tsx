@@ -17,7 +17,7 @@ import {
 import { Activity, listActivities, listRoomTypes, RoomType } from "@/lib/trips";
 
 const inputClass =
-  "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-600 focus:outline-none";
+  "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-teal-500";
 
 function ActivityAdder({
   activities,
@@ -69,7 +69,7 @@ function ActivityAdder({
         type="button"
         onClick={handleAdd}
         disabled={!activityId || isSaving}
-        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       >
         + Agregar
       </button>
@@ -143,34 +143,34 @@ export function OccupanciesSection({ quoteId, tripId, occupancies, editable, onC
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900">Ocupaciones</h3>
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Ocupaciones</h3>
         {editable ? (
           <button
             onClick={() => {
               setEditingOccupancy(null);
               setModalMode("create");
             }}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             + Agregar
           </button>
         ) : null}
       </div>
 
-      {error ? <p className="mt-2 text-sm text-rose-700">{error}</p> : null}
+      {error ? <p className="mt-2 text-sm text-rose-700 dark:text-rose-400">{error}</p> : null}
 
       <div className="mt-3 space-y-3">
         {occupancies.length === 0 ? (
-          <p className="text-sm text-slate-500">Sin ocupaciones todavía.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Sin ocupaciones todavía.</p>
         ) : (
           occupancies.map((occupancy) => (
-            <div key={occupancy.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div key={occupancy.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                     {occupancy.label || occupancy.roomType?.name} · {occupancy.roomType?.name}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {occupancy.adults} adulto{occupancy.adults === 1 ? "" : "s"}
                     {occupancy.minors > 0 ? ` · ${occupancy.minors} menor${occupancy.minors === 1 ? "" : "es"}` : ""}
                     {" · "}Subtotal: ${occupancy.subtotal}
@@ -183,13 +183,13 @@ export function OccupanciesSection({ quoteId, tripId, occupancies, editable, onC
                         setEditingOccupancy(occupancy);
                         setModalMode("edit");
                       }}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => handleDelete(occupancy)}
-                      className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                      className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-800 dark:text-rose-300 dark:hover:bg-rose-500/10"
                     >
                       Eliminar
                     </button>
@@ -198,16 +198,16 @@ export function OccupanciesSection({ quoteId, tripId, occupancies, editable, onC
               </div>
 
               {occupancy.activities && occupancy.activities.length > 0 ? (
-                <ul className="mt-2 space-y-1 border-t border-slate-200 pt-2">
+                <ul className="mt-2 space-y-1 border-t border-slate-200 pt-2 dark:border-slate-700">
                   {occupancy.activities.map((line) => (
-                    <li key={line.id} className="flex items-center justify-between text-xs text-slate-600">
+                    <li key={line.id} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                       <span>
                         {line.activity?.name} × {line.quantity} — ${line.subtotal}
                       </span>
                       {editable ? (
                         <button
                           onClick={() => handleRemoveActivity(occupancy.id, line.id)}
-                          className="text-rose-600 hover:underline"
+                          className="text-rose-600 hover:underline dark:text-rose-400"
                         >
                           Quitar
                         </button>

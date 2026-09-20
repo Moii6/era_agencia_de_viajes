@@ -51,32 +51,32 @@ export default function TripDetailPage() {
   }
 
   if (error && !trip) {
-    return <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>;
+    return <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300">{error}</div>;
   }
 
   if (!trip) {
-    return <p className="text-sm text-slate-500">Cargando...</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>;
   }
 
   return (
     <div>
-      <button onClick={() => router.push("/viajes")} className="mb-4 text-sm text-slate-500 hover:text-slate-700">
+      <button onClick={() => router.push("/viajes")} className="mb-4 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
         ← Viajes
       </button>
 
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-slate-900">{trip.name}</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{trip.name}</h1>
             <Badge value={trip.status} />
           </div>
-          <p className="mt-1 text-slate-500">{trip.destination ?? "Sin destino especificado"}</p>
+          <p className="mt-1 text-slate-500 dark:text-slate-400">{trip.destination ?? "Sin destino especificado"}</p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={trip.status}
             onChange={(e) => handleStatusChange(e.target.value as TripStatus)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none"
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:focus:border-teal-500"
           >
             {STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
@@ -86,7 +86,7 @@ export default function TripDetailPage() {
           </select>
           <button
             onClick={() => setShowEditModal(true)}
-            className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700"
+            className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400"
           >
             Editar
           </button>
@@ -94,62 +94,62 @@ export default function TripDetailPage() {
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300">
           {error}
         </div>
       ) : null}
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Salida</p>
-          <p className="mt-2 text-slate-900">{formatDate(trip.departureDate)}</p>
-          <p className="text-sm text-slate-500">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Salida</p>
+          <p className="mt-2 text-slate-900 dark:text-slate-100">{formatDate(trip.departureDate)}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {trip.departureTime ? `${trip.departureTime} · ` : ""}
             {trip.departurePoint}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Retorno</p>
-          <p className="mt-2 text-slate-900">{formatDate(trip.returnDate)}</p>
-          <p className="text-sm text-slate-500">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Retorno</p>
+          <p className="mt-2 text-slate-900 dark:text-slate-100">{formatDate(trip.returnDate)}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {trip.returnTime ? `${trip.returnTime} · ` : ""}
             {trip.returnPoint}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Transporte y hospedaje</p>
-          <p className="mt-2 text-sm text-slate-700">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Transporte y hospedaje</p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
             {trip.transportIncluded ? "Transporte incluido" : "Sin transporte incluido"}
             {trip.transportNotes ? ` — ${trip.transportNotes}` : ""}
           </p>
-          <p className="text-sm text-slate-700">
+          <p className="text-sm text-slate-700 dark:text-slate-300">
             {trip.lodgingIncluded
               ? `Hospedaje: ${trip.hotelProvider?.name ?? "sin hotel asignado"}`
               : "Sin hospedaje incluido"}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Cupo y anticipo</p>
-          <p className="mt-2 text-sm text-slate-700">Cupo máximo: {trip.capacity}</p>
-          <p className="text-sm text-slate-700">Anticipo mínimo: ${trip.minimumDepositAmount} MXN</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Cupo y anticipo</p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">Cupo máximo: {trip.capacity}</p>
+          <p className="text-sm text-slate-700 dark:text-slate-300">Anticipo mínimo: ${trip.minimumDepositAmount} MXN</p>
         </div>
       </div>
 
       {trip.notes ? (
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Notas</p>
-          <p className="mt-2 text-sm text-slate-700">{trip.notes}</p>
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Notas</p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{trip.notes}</p>
         </div>
       ) : null}
 
       <div className="mt-8 space-y-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <BusesSection tripId={trip.id} />
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <RoomTypesSection tripId={trip.id} />
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <ActivitiesSection tripId={trip.id} />
         </div>
       </div>

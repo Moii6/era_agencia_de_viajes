@@ -279,6 +279,20 @@ badges). Badges de estado con el patrón `bg-X-100 text-X-800` mapeados por "ton
 cualquier estado nuevo (viajes/cotizaciones/reservas) solo necesita agregarse a ese mapa, no
 inventar clases nuevas.
 
+**Modo oscuro (2026-09-20):** se activa solo por preferencia del sistema operativo — Tailwind v4
+responde a `prefers-color-scheme: dark` con el prefijo `dark:` sin configuración adicional, no hay
+switch manual en la UI. Paleta: fondo de página `slate-950`, tarjetas/sidebar/modal `slate-900`,
+bordes `slate-800`/`slate-700`, texto en escala de slate invertida (`100` títulos, `300` cuerpo,
+`400` metadatos), primario `teal-500` (más claro que el `teal-600` del modo claro, para que
+destaque sobre fondo oscuro), y badges/pills con fondo translúcido `-500/10` + texto `-300` en vez
+del bloque sólido claro (efecto "glow", más propio de UI oscuras). Aplicado a **toda la app**:
+layout compartido (sidebar), las 6 pantallas de lista, las 3 de detalle, dashboard, login, y todos
+los formularios/secciones anidadas (28 archivos en total) — cada `className` con color de modo
+claro tiene su contraparte `dark:` al lado, sin excepciones. Verificado con Playwright emulando
+`colorScheme: "dark"` en cada pantalla y flujo de detalle, y con un control en `colorScheme:
+"light"` para confirmar que el modo claro no se alteró. Antes de expandirlo a toda la app, se
+probó primero solo en Clientes para validar la paleta — ver `git log` para ese commit intermedio.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

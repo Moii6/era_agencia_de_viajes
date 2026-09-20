@@ -19,7 +19,7 @@ import { Bus } from "@/lib/trips";
 const TYPE_LABELS: Record<string, string> = { ADULT: "Adulto", MINOR: "Menor" };
 
 const selectClass =
-  "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-600 focus:outline-none";
+  "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-teal-500";
 
 function SeatAssigner({
   buses,
@@ -66,7 +66,7 @@ function SeatAssigner({
         type="button"
         onClick={handleAssign}
         disabled={!busId || !seatNumber || isSaving}
-        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       >
         Asignar
       </button>
@@ -129,37 +129,37 @@ export function TravelersSection({ reservationId, travelers, occupancyOptions, b
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900">Viajeros</h3>
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Viajeros</h3>
         <button
           onClick={() => {
             setEditingTraveler(null);
             setModalMode("create");
           }}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           + Agregar
         </button>
       </div>
 
-      {error ? <p className="mt-2 text-sm text-rose-700">{error}</p> : null}
+      {error ? <p className="mt-2 text-sm text-rose-700 dark:text-rose-400">{error}</p> : null}
 
       <div className="mt-3 space-y-3">
         {travelers.length === 0 ? (
-          <p className="text-sm text-slate-500">Sin viajeros todavía.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Sin viajeros todavía.</p>
         ) : (
           travelers.map((traveler) => (
-            <div key={traveler.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div key={traveler.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                     {traveler.fullName}
                     {traveler.isHolder ? (
-                      <span className="ml-2 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700">
+                      <span className="ml-2 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
                         Titular
                       </span>
                     ) : null}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {TYPE_LABELS[traveler.type]} · {traveler.age} años
                     {traveler.phone ? ` · ${traveler.phone}` : ""}
                   </p>
@@ -170,13 +170,13 @@ export function TravelersSection({ reservationId, travelers, occupancyOptions, b
                       setEditingTraveler(traveler);
                       setModalMode("edit");
                     }}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => handleDelete(traveler)}
-                    className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                    className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-800 dark:text-rose-300 dark:hover:bg-rose-500/10"
                   >
                     Eliminar
                   </button>
@@ -184,11 +184,11 @@ export function TravelersSection({ reservationId, travelers, occupancyOptions, b
               </div>
 
               {traveler.seatAssignment ? (
-                <div className="mt-2 flex items-center justify-between border-t border-slate-200 pt-2 text-xs text-slate-600">
+                <div className="mt-2 flex items-center justify-between border-t border-slate-200 pt-2 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-400">
                   <span>
                     Asiento: {traveler.seatAssignment.bus?.label} · #{traveler.seatAssignment.seatNumber}
                   </span>
-                  <button onClick={() => handleUnassignSeat(traveler.id)} className="text-rose-600 hover:underline">
+                  <button onClick={() => handleUnassignSeat(traveler.id)} className="text-rose-600 hover:underline dark:text-rose-400">
                     Quitar asiento
                   </button>
                 </div>

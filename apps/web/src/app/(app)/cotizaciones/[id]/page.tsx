@@ -66,11 +66,11 @@ export default function QuoteDetailPage() {
   }
 
   if (error && !quote) {
-    return <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>;
+    return <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300">{error}</div>;
   }
 
   if (!quote) {
-    return <p className="text-sm text-slate-500">Cargando...</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>;
   }
 
   const nextStatuses = QUOTE_TRANSITIONS[quote.status];
@@ -80,7 +80,7 @@ export default function QuoteDetailPage() {
     <div>
       <button
         onClick={() => router.push("/cotizaciones")}
-        className="mb-4 text-sm text-slate-500 hover:text-slate-700"
+        className="mb-4 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
       >
         ← Cotizaciones
       </button>
@@ -88,10 +88,10 @@ export default function QuoteDetailPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-slate-900">{quote.client.name}</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{quote.client.name}</h1>
             <Badge value={quote.status} />
           </div>
-          <p className="mt-1 text-slate-500">
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
             {quote.trip.name} · Salida {formatDate(quote.trip.departureDate)}
           </p>
         </div>
@@ -100,7 +100,7 @@ export default function QuoteDetailPage() {
             <select
               value=""
               onChange={(e) => handleStatusChange(e.target.value as QuoteStatus)}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:focus:border-teal-500"
             >
               <option value="" disabled>
                 Cambiar estado...
@@ -114,14 +114,14 @@ export default function QuoteDetailPage() {
           ) : null}
           <button
             onClick={() => setShowEditModal(true)}
-            className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700"
+            className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400"
           >
             Editar
           </button>
           {isDraft ? (
             <button
               onClick={handleDelete}
-              className="rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+              className="rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-900 dark:text-rose-300 dark:hover:bg-rose-500/10"
             >
               Eliminar
             </button>
@@ -130,44 +130,44 @@ export default function QuoteDetailPage() {
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300">
           {error}
         </div>
       ) : null}
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Cliente</p>
-          <p className="mt-2 text-sm text-slate-900">{quote.client.name}</p>
-          <p className="text-sm text-slate-500">{quote.client.email ?? "Sin email"}</p>
-          <p className="text-sm text-slate-500">{quote.client.phone ?? "Sin teléfono"}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Cliente</p>
+          <p className="mt-2 text-sm text-slate-900 dark:text-slate-100">{quote.client.name}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{quote.client.email ?? "Sin email"}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{quote.client.phone ?? "Sin teléfono"}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Viaje</p>
-          <p className="mt-2 text-sm text-slate-900">{quote.trip.name}</p>
-          <p className="text-sm text-slate-500">Salida: {formatDate(quote.trip.departureDate)}</p>
-          <p className="text-sm text-slate-500">Retorno: {formatDate(quote.trip.returnDate)}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Viaje</p>
+          <p className="mt-2 text-sm text-slate-900 dark:text-slate-100">{quote.trip.name}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Salida: {formatDate(quote.trip.departureDate)}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Retorno: {formatDate(quote.trip.returnDate)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Totales</p>
-          <p className="mt-2 text-sm text-slate-700">Subtotal: ${quote.subtotal}</p>
-          <p className="text-sm text-slate-700">Comisión (5%): ${quote.commission}</p>
-          <p className="text-sm font-semibold text-slate-900">Total: ${quote.total}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Totales</p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">Subtotal: ${quote.subtotal}</p>
+          <p className="text-sm text-slate-700 dark:text-slate-300">Comisión (5%): ${quote.commission}</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Total: ${quote.total}</p>
           {quote.validUntil ? (
-            <p className="mt-1 text-xs text-slate-500">Válida hasta: {formatDate(quote.validUntil)}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Válida hasta: {formatDate(quote.validUntil)}</p>
           ) : null}
         </div>
       </div>
 
       {quote.notes ? (
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Notas</p>
-          <p className="mt-2 text-sm text-slate-700">{quote.notes}</p>
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Notas</p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{quote.notes}</p>
         </div>
       ) : null}
 
       <div className="mt-8">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <OccupanciesSection
             quoteId={quote.id}
             tripId={quote.tripId}
