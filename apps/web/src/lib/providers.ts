@@ -7,7 +7,7 @@ export type Provider = {
   name: string;
   type: ProviderType;
   address: string | null;
-  contactInfo: string | null;
+  contacts: string[];
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -17,7 +17,7 @@ export type ProviderInput = {
   name: string;
   type: ProviderType;
   address?: string;
-  contactInfo?: string;
+  contacts?: string[];
   notes?: string;
 };
 

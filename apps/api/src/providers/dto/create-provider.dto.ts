@@ -1,5 +1,11 @@
 import { ProviderType } from '@erp/db';
-import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 export class CreateProviderDto {
   @IsString()
@@ -14,8 +20,9 @@ export class CreateProviderDto {
   address?: string;
 
   @IsOptional()
-  @IsString()
-  contactInfo?: string;
+  @IsArray()
+  @IsString({ each: true })
+  contacts?: string[];
 
   @IsOptional()
   @IsString()

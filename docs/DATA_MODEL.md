@@ -107,7 +107,7 @@ Sin cambios respecto a v1 (ver historial). Se mantiene `role` de User con `GUIDE
 | name | string | Nombre del hotel/transportista |
 | type | enum HOTEL/TRANSPORT/OTHER | |
 | address | string? | Importante para hoteles |
-| contactInfo | string? | |
+| contacts | string[] | Teléfonos/emails sueltos, sin etiquetar; 0 o más |
 | notes | text? | |
 | deletedAt | timestamp? | |
 | createdAt / updatedAt | timestamp | |
@@ -502,7 +502,7 @@ model Provider {
   name        String
   type        ProviderType
   address     String?
-  contactInfo String?
+  contacts    String[] @default([])
   notes       String?
   deletedAt   DateTime?
   createdAt   DateTime     @default(now())

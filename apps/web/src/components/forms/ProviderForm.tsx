@@ -24,10 +24,18 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
   const [name, setName] = useState(provider?.name ?? "");
   const [type, setType] = useState<ProviderType>(provider?.type ?? "HOTEL");
   const [address, setAddress] = useState(provider?.address ?? "");
-  const [contactInfo, setContactInfo] = useState(provider?.contactInfo ?? "");
+  const [contacts, setContacts] = useState<string[]>(provider?.contacts?.length ? provider.contacts : [""]);
   const [notes, setNotes] = useState(provider?.notes ?? "");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  function updateContact(index: number, value: string) {
+    setContacts(contacts.map((c, i) => (i === index ? value : c)));
+  }
+
+  function removeContact(index: number) {
+    setContacts(contacts.filter((_, i) => i !== index));
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,7 +47,7 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
         name,
         type,
         address: address || undefined,
-        contactInfo: contactInfo || undefined,
+        contacts: contacts.map((c) => c.trim()).filter(Boolean),
         notes: notes || undefined,
       });
     } catch (err) {
@@ -96,16 +104,34 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
       </div>
 
       <div>
-        <label htmlFor="contactInfo" className={labelClass}>
-          Contacto
-        </label>
-        <input
-          id="contactInfo"
-          value={contactInfo}
-          onChange={(e) => setContactInfo(e.target.value)}
-          className={inputClass}
-          placeholder="Email o teléfono"
-        />
+        <label className={labelClass}>Contacto</label>
+        <div className="space-y-2">
+          {contacts.map((contact, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <input
+                value={contact}
+                onChange={(e) => updateContact(index, e.target.value)}
+                className={inputClass}
+                placeholder="Email o teléfono"
+              />
+              <button
+                type="button"
+                onClick={() => removeContact(index)}
+                aria-label="Quitar contacto"
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-slate-500 hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setContacts([...contacts, ""])}
+          className="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+        >
+          + Agregar contacto
+        </button>
       </div>
 
       <div>

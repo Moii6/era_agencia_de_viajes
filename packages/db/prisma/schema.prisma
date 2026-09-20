@@ -168,7 +168,7 @@ model Provider {
   name        String
   type        ProviderType
   address     String?
-  contactInfo String?
+  contacts    String[] @default([])
   notes       String?
   deletedAt   DateTime?
   createdAt   DateTime     @default(now())

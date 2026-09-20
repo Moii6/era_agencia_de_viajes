@@ -150,7 +150,17 @@ export default function ProveedoresPage() {
                   <td className="px-5 py-3.5">
                     <Badge value={provider.type} />
                   </td>
-                  <td className="px-5 py-3.5 text-slate-700">{provider.contactInfo ?? "—"}</td>
+                  <td className="px-5 py-3.5 text-slate-700">
+                    {provider.contacts.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {provider.contacts.map((contact, index) => (
+                          <div key={index}>{contact}</div>
+                        ))}
+                      </div>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td className="px-5 py-3.5 text-slate-500">{provider.notes ?? "—"}</td>
                   <td className="px-5 py-3.5">
                     <div className="flex justify-end gap-2">

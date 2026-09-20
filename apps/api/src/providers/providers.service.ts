@@ -38,7 +38,7 @@ export class ProvidersService {
         name: dto.name.trim(),
         type: dto.type,
         address: dto.address,
-        contactInfo: dto.contactInfo,
+        contacts: dto.contacts ?? [],
         notes: dto.notes,
       },
     });
