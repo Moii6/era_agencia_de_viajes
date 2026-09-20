@@ -113,8 +113,22 @@ solo el propio OWNER/ADMIN del tenant puede editar estos datos vía `PATCH /tena
 | contacts | string[] | Teléfonos/emails sueltos, sin etiquetar; mismo patrón que `Provider.contacts` |
 | notes | text? | |
 
-### User / Client / Interaction
-Sin cambios respecto a v1 (ver historial). Se mantiene `role` de User con `GUIDE` para fase 2.
+### User
+Base sin cambios respecto a v1 (se mantiene `role` con `GUIDE` para fase 2). Se agregó soporte para
+el flujo de aprobación de doble OWNER (máximo 2 `OWNER` por tenant; con 2 activos, toda alta o
+edición de usuario requiere aprobación del *otro* OWNER — ver PLANNING.md §"Edición de usuarios con
+aprobación de doble OWNER" para el detalle):
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| status | enum ACTIVE/INACTIVE/PENDING | `PENDING` = alta sin aprobar todavía; bloquea login |
+| requestedByUserId | uuid FK → User? | Quién pidió el alta/edición pendiente |
+| pendingName | string? | Propuesta de edición, no aplicada hasta aprobar |
+| pendingEmail | string? | Ídem |
+| pendingRole | enum UserRole? | Ídem |
+
+### Client / Interaction
+Sin cambios respecto a v1 (ver historial).
 
 ### Provider *(catálogo opcional)*
 | Campo | Tipo | Notas |
@@ -373,6 +387,7 @@ enum UserRole {
 enum UserStatus {
   ACTIVE
   INACTIVE
+  PENDING
 }
 
 enum ClientStage {
@@ -467,6 +482,13 @@ model User {
   lastLoginAt  DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  requestedByUserId String?
+  requestedBy       User?      @relation("UserApprovalRequests", fields: [requestedByUserId], references: [id])
+  approvalRequests  User[]     @relation("UserApprovalRequests")
+  pendingName       String?
+  pendingEmail      String?
+  pendingRole       UserRole?
 
   clientsOwned      Client[]      @relation("ClientOwner")
   interactions      Interaction[]

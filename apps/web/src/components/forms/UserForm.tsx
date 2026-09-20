@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
-import { UserInput, UserRole } from "@/lib/users";
+import { AgencyUser, UserInput, UserRole, UserUpdateInput } from "@/lib/users";
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "OWNER", label: "Owner" },
@@ -16,15 +16,16 @@ const inputClass =
 const labelClass = "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
 
 type UserFormProps = {
-  onSubmit: (input: UserInput) => Promise<unknown>;
+  user?: AgencyUser;
+  onSubmit: (input: UserInput | UserUpdateInput) => Promise<unknown>;
   onCancel: () => void;
 };
 
-export function UserForm({ onSubmit, onCancel }: UserFormProps) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
+  const [name, setName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("AGENT");
+  const [role, setRole] = useState<UserRole>(user?.role ?? "AGENT");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -34,9 +35,13 @@ export function UserForm({ onSubmit, onCancel }: UserFormProps) {
     setIsSaving(true);
 
     try {
-      await onSubmit({ name, email, password, role });
+      if (user) {
+        await onSubmit({ name, email, role });
+      } else {
+        await onSubmit({ name, email, password, role });
+      }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo registrar el usuario");
+      setError(err instanceof ApiError ? err.message : "No se pudo guardar el usuario");
       setIsSaving(false);
     }
   }
@@ -71,21 +76,23 @@ export function UserForm({ onSubmit, onCancel }: UserFormProps) {
         />
       </div>
 
-      <div>
-        <label htmlFor="password" className={labelClass}>
-          Contraseña *
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className={inputClass}
-          placeholder="Mínimo 8 caracteres"
-          required
-          minLength={8}
-        />
-      </div>
+      {user ? null : (
+        <div>
+          <label htmlFor="password" className={labelClass}>
+            Contraseña *
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={inputClass}
+            placeholder="Mínimo 8 caracteres"
+            required
+            minLength={8}
+          />
+        </div>
+      )}
 
       <div>
         <label htmlFor="role" className={labelClass}>
@@ -99,6 +106,12 @@ export function UserForm({ onSubmit, onCancel }: UserFormProps) {
           ))}
         </select>
       </div>
+
+      {user ? (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Este cambio quedará pendiente de aprobación del otro OWNER si la agencia ya tiene 2.
+        </p>
+      ) : null}
 
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300">
@@ -119,7 +132,7 @@ export function UserForm({ onSubmit, onCancel }: UserFormProps) {
           disabled={isSaving}
           className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-teal-500 dark:hover:bg-teal-400"
         >
-          {isSaving ? "Guardando..." : "Registrar"}
+          {isSaving ? "Guardando..." : user ? "Guardar" : "Registrar"}
         </button>
       </div>
     </form>

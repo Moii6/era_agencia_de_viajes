@@ -22,6 +22,7 @@ enum UserRole {
 enum UserStatus {
   ACTIVE
   INACTIVE
+  PENDING
 }
 
 enum ClientStage {
@@ -116,6 +117,19 @@ model User {
   lastLoginAt  DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  // Two-owner approval workflow: a create/edit by one OWNER (or an ADMIN)
+  // sits pending until the *other* OWNER approves it — see UsersService.
+  // A brand-new user awaiting approval has status PENDING and its real
+  // fields already hold the proposed data. An edit to an already-ACTIVE
+  // user instead stages the proposal in pendingName/pendingEmail/pendingRole,
+  // leaving the live fields untouched until approved.
+  requestedByUserId String?
+  requestedBy       User?     @relation("UserApprovalRequests", fields: [requestedByUserId], references: [id])
+  approvalRequests  User[]    @relation("UserApprovalRequests")
+  pendingName       String?
+  pendingEmail      String?
+  pendingRole       UserRole?
 
   clientsOwned     Client[]      @relation("ClientOwner")
   interactions     Interaction[]

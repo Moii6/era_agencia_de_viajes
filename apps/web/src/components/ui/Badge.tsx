@@ -32,6 +32,7 @@ const STATUS_TONE: Record<string, Tone> = {
   OTHER: "neutral",
   // User status/role
   ACTIVE: "success",
+  PENDING: "warning",
   OWNER: "warning",
   ADMIN: "info",
   AGENT: "success",
@@ -58,6 +59,7 @@ const LABELS: Record<string, string> = {
   PUBLISHED: "Publicado",
   CLOSED: "Cerrado",
   ACTIVE: "Activo",
+  PENDING: "Pendiente",
   OWNER: "Owner",
   ADMIN: "Admin",
   AGENT: "Agente",

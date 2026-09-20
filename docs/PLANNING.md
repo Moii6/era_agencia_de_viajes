@@ -201,17 +201,24 @@ app/
                      — el botón "Editar" solo se muestra si el rol de sesión
                      es OWNER o ADMIN (PATCH /tenants/me es solo para esos
                      roles); primera pantalla del frontend con gating de UI
-                     por rol. También incluye la sección "Usuarios" (listar +
-                     registrar, sin edición/borrado — el backend no los
-                     tiene), oculta por completo para AGENT/GUIDE porque
-                     GET /users también es solo OWNER/ADMIN
+                     por rol. También incluye la sección "Usuarios" (listar,
+                     alta, edición — sin borrado, el backend no lo tiene),
+                     oculta por completo para AGENT/GUIDE porque GET /users
+                     también es solo OWNER/ADMIN. Alta y edición pasan por un
+                     flujo de aprobación del otro OWNER cuando ya hay 2 (ver
+                     "Edición de usuarios con aprobación de doble OWNER" más
+                     abajo) — Aprobar/Rechazar solo visibles para el OWNER
+                     que no fue quien solicitó el cambio
 components/
   ui/        ✅ Modal (soporta size md/lg), Badge (reutilizables entre módulos)
   forms/     ✅ ClientForm, ProviderForm, TripForm, BusForm, RoomTypeForm,
              ActivityForm, QuoteForm (alta), QuoteEditForm (notas/vigencia),
              OccupancyForm, ReservationForm (alta), TravelerForm, DepositForm,
-             TenantForm, UserForm (alta) (mismo patrón por módulo)
-  tenant/    ✅ UsersSection (lista de usuarios de la agencia + alta,
+             TenantForm, UserForm (alta y edición, sin campo de contraseña en
+             edición) (mismo patrón por módulo)
+  tenant/    ✅ UsersSection (lista de usuarios de la agencia + alta/edición
+             con flujo de aprobación de doble OWNER, botones Aprobar/Rechazar
+             condicionados a rol y a no ser quien solicitó el cambio;
              visible solo dentro de agencia/ para OWNER/ADMIN)
   trips/     ✅ BusesSection, RoomTypesSection, ActivitiesSection (listas
              autocontenidas usadas en el detalle de viaje)
@@ -318,11 +325,49 @@ verificado en Playwright simulando un rol AGENT vía localStorage (0 botones "Ed
 
 **Módulo de registro de usuarios en "Mi Agencia" (2026-09-20):** agrega la sección "Usuarios"
 (listar + registrar) directamente en `agencia/`, usando los endpoints de `users` que ya existían
-sin frontend. Confirmado explícitamente con el usuario: no hay edición de usuarios existentes, es
-solo alta — y **máximo 2 usuarios con rol OWNER por tenant**, validado en `UsersService.create`
-(cuenta OWNERs activos antes de crear; `BadRequestException` si ya hay 2). Verificado contra Render
-por curl (2do OWNER → 201, 3er OWNER → 400 "Ya existen 2 usuarios con rol OWNER en esta agencia") y
-en el formulario real de la UI viendo ese mismo mensaje inline.
+sin frontend. En este momento (sin edición todavía) — **máximo 2 usuarios con rol OWNER por
+tenant**, validado en `UsersService.create` (cuenta OWNERs activos antes de crear;
+`BadRequestException` si ya hay 2). Verificado contra Render por curl (2do OWNER → 201, 3er OWNER →
+400 "Ya existen 2 usuarios con rol OWNER en esta agencia") y en el formulario real de la UI viendo
+ese mismo mensaje inline. Superado por la entrada siguiente, que sí agrega edición.
+
+**Edición de usuarios con aprobación de doble OWNER (2026-09-20, mismo día):** el usuario pidió
+edición de usuarios existentes, con la condición de que tanto el alta como la edición requieran
+aprobación del *otro* OWNER antes de tomar efecto. Diseño:
+- `User` gana `status: PENDING` (además de `ACTIVE`/`INACTIVE`), `requestedByUserId` (quién pidió
+  el cambio), y `pendingName`/`pendingEmail`/`pendingRole` (la propuesta de edición, mientras los
+  campos reales de un usuario ya `ACTIVE` no se tocan hasta aprobar).
+- **Regla de bootstrap explícita (no pedida, inferida para evitar un deadlock):** la aprobación
+  solo se exige a partir de que el tenant ya tiene 2 OWNERs activos. Con 1 solo OWNER (una agencia
+  recién creada), sus altas/ediciones aplican de inmediato — si no, el primerísimo usuario que ese
+  OWNER intentara crear se quedaría pendiente para siempre, porque no existiría un segundo OWNER
+  capaz de aprobarlo.
+- Alta: con aprobación pendiente, el usuario nuevo se crea con `status: PENDING` (no puede iniciar
+  sesión — `AuthService.login` ya rechazaba cualquier `status !== 'ACTIVE'`, así que esto no
+  necesitó tocarse) en vez de `ACTIVE`.
+- Edición: con aprobación pendiente, los campos `pendingName`/`pendingEmail`/`pendingRole` guardan
+  la propuesta completa (no solo el diff) y los campos reales no cambian todavía. No se puede editar
+  un usuario que sigue `PENDING` de alta (hay que aprobar o rechazar esa alta primero).
+  No incluye cambio de contraseña — fuera de alcance.
+- `POST /users/:id/approve` y `POST /users/:id/reject` — **solo OWNER** (ni ADMIN, aunque ADMIN sí
+  puede crear/editar), y nunca el mismo usuario que pidió el cambio (bloqueo de autoaprobación,
+  aplica también aunque sea "el único otro OWNER" técnicamente igual a sí mismo). Rechazar un alta
+  pendiente borra la fila; rechazar una edición pendiente solo limpia los campos `pending*`, dejando
+  los datos reales intactos.
+- El tope de 2 OWNERs ahora cuenta `ACTIVE` + `PENDING` juntos (antes solo contaba `ACTIVE`), para
+  no permitir una 3ra alta de OWNER que técnicamente "cabría" mientras las primeras 2 siguen
+  pendientes.
+- Frontend (`UsersSection`): cada fila usuario muestra su estado pendiente si aplica (alta o
+  edición) con quién lo solicitó; los botones "Aprobar"/"Rechazar" solo se muestran si
+  `session.role === "OWNER"` y `session.id !== requestedByUserId` — si no, se muestra "Esperando
+  aprobación del otro OWNER" (para quien pidió el cambio) sin controles.
+- Verificado end-to-end con dos sesiones reales de Playwright (Owner A y Owner B logueados a la
+  vez, cada uno en su propio browser context): A crea un usuario → quedó `PENDING`, A no puede
+  aprobar su propia solicitud (400), B sí puede y lo activa. A edita un usuario ya activo → el
+  nombre visible no cambia todavía, aparece "Cambio pendiente..." con quién lo pidió, A ve
+  "Esperando aprobación" sin botones. B ve los botones, rechaza → confirmado por curl que el nombre
+  real nunca cambió. También probado por curl: 3er OWNER bloqueado contando pendientes, y editar un
+  usuario `PENDING` de alta rechazado con mensaje claro.
 
 ### 7.3 Reglas de negocio no negociables (backend)
 
@@ -335,9 +380,10 @@ en el formulario real de la UI viendo ese mismo mensaje inline.
 7. Los viajes deben manejar capacidad total (turistas + guías) consistente con sus autobuses.
 8. Los estados de reserva y cotización deben transitar de manera controlada (no saltos arbitrarios).
 9. Cada `Interaction` debe reportar quién la registró y cuándo.
-10. Máximo 2 usuarios con rol `OWNER` por tenant (validado en `UsersService.create`, ver 2026-09-20
-    abajo). No existe edición de usuarios (rol, estado, etc.) — solo alta — así que esta es la única
-    puerta donde se puede violar el límite.
+10. Máximo 2 usuarios con rol `OWNER` por tenant (cuenta `ACTIVE` + `PENDING`), validado tanto en
+    alta como en edición de rol.
+11. Con 2+ OWNERs activos, toda alta o edición de usuario queda `PENDING` hasta que el *otro* OWNER
+    la apruebe — nunca el mismo que la solicitó. Con 0-1 OWNER activo no aplica (bootstrap).
 
 ### 7.4 Orden recomendado de implementación
 

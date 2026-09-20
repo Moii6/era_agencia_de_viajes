@@ -121,10 +121,10 @@ export default function AgenciaPage() {
         </div>
       ) : null}
 
-      {canEdit ? (
+      {canEdit && user ? (
         <div className="mt-8">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-            <UsersSection />
+            <UsersSection currentUserId={user.id} currentUserRole={user.role} />
           </div>
         </div>
       ) : null}
