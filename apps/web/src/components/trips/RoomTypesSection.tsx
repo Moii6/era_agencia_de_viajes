@@ -81,6 +81,9 @@ export function RoomTypesSection({ tripId }: { tripId: string }) {
                   {roomType.pricePerMinor}
                   {roomType.quantityAvailable != null ? ` · ${roomType.quantityAvailable} disponibles` : ""}
                 </p>
+                {roomType.characteristics ? (
+                  <p className="mt-1 text-xs text-slate-500">{roomType.characteristics}</p>
+                ) : null}
               </div>
               <div className="flex gap-2">
                 <button
