@@ -11,3 +11,16 @@ export function formatDate(value: string, options: Intl.DateTimeFormatOptions = 
     ...options,
   });
 }
+
+// Same UTC-calendar-date reasoning as formatDate, but returns a comparable
+// timestamp (UTC midnight) instead of a display string — for "is this date
+// today / in range" checks without the viewer's timezone shifting the day.
+export function toUTCDateOnly(value: string) {
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+  return Date.UTC(year, month - 1, day);
+}
+
+export function todayUTCDateOnly() {
+  const now = new Date();
+  return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+}

@@ -167,7 +167,12 @@ app/
   page.tsx           ✅ login (vive en /, fuera del grupo protegido)
   (app)/             ✅ route group protegido: layout.tsx hace el guard de
                      sesión + sidebar de navegación una sola vez
-    dashboard/       ✅ básico (nombre, email, rol)
+    dashboard/       ✅ datos de sesión (nombre, email, rol) + tarjeta de
+                     "Viaje en curso" (rango departureDate–returnDate cubre
+                     hoy) que cae a "Próximo viaje" (el PUBLISHED más
+                     cercano) si no hay ninguno en curso, y tarjeta de
+                     "Último viaje creado" (el más reciente por createdAt,
+                     sin filtrar por estado)
     clientes/        ✅ CRUD completo (lista, filtro por etapa, crear/editar
                      en modal, soft delete) — plantilla de referencia
     proveedores/     ✅ CRUD completo (lista, filtro por tipo) — no estaba
@@ -208,8 +213,11 @@ lib/         ✅ api.ts (fetch autenticado + manejo de 401), auth.ts (sesión
              reservations.ts (tipos + llamadas por recurso, incluye
              QUOTE_TRANSITIONS y RESERVATION_TRANSITIONS espejo de los mapas
              del backend para la UI), formats.ts (formatDate compartido,
-             fuerza timeZone: "UTC" para evitar el bug de día -1) — cada
-             módulo nuevo agrega su propio lib/<recurso>.ts
+             fuerza timeZone: "UTC" para evitar el bug de día -1; también
+             toUTCDateOnly/todayUTCDateOnly para comparar fechas-calendario
+             sin que la zona horaria del navegador corra el día, usado por
+             el dashboard) — cada módulo nuevo agrega su propio
+             lib/<recurso>.ts
 ```
 
 Probado en navegador real (Playwright headless, no solo build/typecheck): login → dashboard →
