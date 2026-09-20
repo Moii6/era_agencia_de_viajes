@@ -41,6 +41,7 @@ export type Quote = {
   validUntil: string | null;
   notes: string | null;
   subtotal: string;
+  commission: string;
   total: string;
   status: QuoteStatus;
   createdAt: string;

@@ -232,7 +232,9 @@ Los ocupantes de este autobús (viajeros y guías) se consultan vía `SeatAssign
 | tripId | uuid FK → Trip | |
 | status | enum DRAFT/SENT/ACCEPTED/REJECTED/EXPIRED | |
 | currency | string | |
-| subtotal / total | decimal | Suma de `QuoteOccupancy.subtotal` (+ actividades) |
+| subtotal | decimal | Suma de `QuoteOccupancy.subtotal` + actividades (antes de comisión) |
+| commission | decimal | 5% de `subtotal` — es como la agencia gana dinero en cada reserva |
+| total | decimal | `subtotal + commission` |
 | validUntil | date? | |
 | notes | text? | |
 | createdAt / updatedAt | timestamp | |
@@ -649,6 +651,7 @@ model Quote {
   status     QuoteStatus @default(DRAFT)
   currency   String      @default("MXN")
   subtotal   Decimal     @db.Decimal(12, 2)
+  commission Decimal     @db.Decimal(12, 2) @default(0)
   total      Decimal     @db.Decimal(12, 2)
   validUntil DateTime?
   notes      String?

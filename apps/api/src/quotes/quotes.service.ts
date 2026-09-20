@@ -17,6 +17,10 @@ const ALLOWED_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
   EXPIRED: [],
 };
 
+// The agency's income is the commission on each booked trip — every quote
+// carries it as its own line item rather than folding it invisibly into total.
+export const QUOTE_COMMISSION_RATE = 0.05;
+
 @Injectable()
 export class QuotesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -124,13 +128,14 @@ export class QuotesService {
   }
 
   /** Recomputes subtotal (occupancies only) and total (+ their activities). */
+  /** subtotal = rooms + activities; commission = 5% of subtotal; total = subtotal + commission. */
   async recalculateTotals(quoteId: string) {
     const occupancies = await this.prisma.quoteOccupancy.findMany({
       where: { quoteId },
       include: { activities: true },
     });
 
-    const subtotal = occupancies.reduce(
+    const roomsTotal = occupancies.reduce(
       (sum, o) => sum + Number(o.subtotal),
       0,
     );
@@ -140,9 +145,13 @@ export class QuotesService {
       0,
     );
 
+    const subtotal = roomsTotal + activitiesTotal;
+    const commission = subtotal * QUOTE_COMMISSION_RATE;
+    const total = subtotal + commission;
+
     await this.prisma.quote.update({
       where: { id: quoteId },
-      data: { subtotal, total: subtotal + activitiesTotal },
+      data: { subtotal, commission, total },
     });
   }
 

@@ -261,6 +261,15 @@ que sus totales quedaran consistentes con la nueva fórmula — verificado que u
 a la migración sigue mostrando el total correcto tras el recálculo. Probado también el cálculo
 completo end-to-end: habitación a $1000/noche en un viaje de 4 noches → ocupación → total $4000.
 
+**Comisión de la agencia (2026-09-20):** así es como la agencia gana dinero — cada cotización
+incluye una comisión del 5% sobre `subtotal` (habitaciones + actividades), guardada en el nuevo
+campo `Quote.commission` (no solo mezclada en `total`, para que se pueda mostrar como línea aparte).
+`total = subtotal + commission`. Tasa fija por ahora (`QUOTE_COMMISSION_RATE = 0.05` en
+`quotes.service.ts`), no configurable por tenant. Igual que el cambio de precio por noche, migrado
+a mano contra Render y con un script de recálculo para las cotizaciones existentes. Verificado en
+navegador: cotización nueva ($4000 subtotal → $200 comisión → $4200 total) y una cotización previa
+a la migración mostrando su comisión recalculada correctamente.
+
 **Tema visual (decidido y aplicado a toda la app):** tema claro, fondo `slate-50`, tarjetas `white`
 con borde `slate-200`, texto en escala de slate (`900` títulos, `700` cuerpo, `500` metadatos), y
 **teal** como color primario (no el azul genérico original — se probaron ambos lado a lado y teal

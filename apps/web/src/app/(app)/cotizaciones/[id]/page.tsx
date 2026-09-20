@@ -151,6 +151,7 @@ export default function QuoteDetailPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Totales</p>
           <p className="mt-2 text-sm text-slate-700">Subtotal: ${quote.subtotal}</p>
+          <p className="text-sm text-slate-700">Comisión (5%): ${quote.commission}</p>
           <p className="text-sm font-semibold text-slate-900">Total: ${quote.total}</p>
           {quote.validUntil ? (
             <p className="mt-1 text-xs text-slate-500">Válida hasta: {formatDate(quote.validUntil)}</p>
