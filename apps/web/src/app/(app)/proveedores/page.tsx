@@ -143,7 +143,10 @@ export default function ProveedoresPage() {
             ) : (
               providers.map((provider) => (
                 <tr key={provider.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-3.5 font-medium text-slate-900">{provider.name}</td>
+                  <td className="px-5 py-3.5">
+                    <div className="font-medium text-slate-900">{provider.name}</div>
+                    {provider.address ? <div className="text-xs text-slate-500">{provider.address}</div> : null}
+                  </td>
                   <td className="px-5 py-3.5">
                     <Badge value={provider.type} />
                   </td>

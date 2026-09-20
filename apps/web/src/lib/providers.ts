@@ -6,6 +6,7 @@ export type Provider = {
   id: string;
   name: string;
   type: ProviderType;
+  address: string | null;
   contactInfo: string | null;
   notes: string | null;
   createdAt: string;
@@ -15,6 +16,7 @@ export type Provider = {
 export type ProviderInput = {
   name: string;
   type: ProviderType;
+  address?: string;
   contactInfo?: string;
   notes?: string;
 };

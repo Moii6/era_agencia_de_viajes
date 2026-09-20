@@ -23,6 +23,7 @@ type ProviderFormProps = {
 export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps) {
   const [name, setName] = useState(provider?.name ?? "");
   const [type, setType] = useState<ProviderType>(provider?.type ?? "HOTEL");
+  const [address, setAddress] = useState(provider?.address ?? "");
   const [contactInfo, setContactInfo] = useState(provider?.contactInfo ?? "");
   const [notes, setNotes] = useState(provider?.notes ?? "");
   const [error, setError] = useState("");
@@ -37,6 +38,7 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
       await onSubmit({
         name,
         type,
+        address: address || undefined,
         contactInfo: contactInfo || undefined,
         notes: notes || undefined,
       });
@@ -78,6 +80,19 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
             </option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <label htmlFor="address" className={labelClass}>
+          Dirección
+        </label>
+        <input
+          id="address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          className={inputClass}
+          placeholder="Calle, número, colonia, ciudad"
+        />
       </div>
 
       <div>

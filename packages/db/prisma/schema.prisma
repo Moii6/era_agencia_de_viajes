@@ -167,6 +167,7 @@ model Provider {
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
   name        String
   type        ProviderType
+  address     String?
   contactInfo String?
   notes       String?
   deletedAt   DateTime?

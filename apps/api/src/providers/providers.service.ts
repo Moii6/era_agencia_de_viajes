@@ -37,6 +37,7 @@ export class ProvidersService {
         tenantId,
         name: dto.name.trim(),
         type: dto.type,
+        address: dto.address,
         contactInfo: dto.contactInfo,
         notes: dto.notes,
       },

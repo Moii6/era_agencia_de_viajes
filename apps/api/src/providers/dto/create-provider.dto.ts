@@ -11,6 +11,10 @@ export class CreateProviderDto {
 
   @IsOptional()
   @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
   contactInfo?: string;
 
   @IsOptional()

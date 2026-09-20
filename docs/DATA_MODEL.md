@@ -106,6 +106,7 @@ Sin cambios respecto a v1 (ver historial). Se mantiene `role` de User con `GUIDE
 | tenantId | uuid FK | |
 | name | string | Nombre del hotel/transportista |
 | type | enum HOTEL/TRANSPORT/OTHER | |
+| address | string? | Importante para hoteles |
 | contactInfo | string? | |
 | notes | text? | |
 | deletedAt | timestamp? | |
@@ -500,6 +501,7 @@ model Provider {
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
   name        String
   type        ProviderType
+  address     String?
   contactInfo String?
   notes       String?
   deletedAt   DateTime?
