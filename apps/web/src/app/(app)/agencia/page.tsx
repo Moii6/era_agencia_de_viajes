@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { TenantForm } from "@/components/forms/TenantForm";
+import { UsersSection } from "@/components/tenant/UsersSection";
 import { ApiError } from "@/lib/api";
 import { getUser, SessionUser } from "@/lib/auth";
 import { getTenant, Tenant, TenantInput, updateTenant } from "@/lib/tenant";
@@ -117,6 +118,14 @@ export default function AgenciaPage() {
             Notas
           </p>
           <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{tenant.notes}</p>
+        </div>
+      ) : null}
+
+      {canEdit ? (
+        <div className="mt-8">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+            <UsersSection />
+          </div>
         </div>
       ) : null}
 

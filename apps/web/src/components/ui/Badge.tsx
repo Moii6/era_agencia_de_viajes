@@ -30,6 +30,12 @@ const STATUS_TONE: Record<string, Tone> = {
   HOTEL: "info",
   TRANSPORT: "neutral",
   OTHER: "neutral",
+  // User status/role
+  ACTIVE: "success",
+  OWNER: "warning",
+  ADMIN: "info",
+  AGENT: "success",
+  GUIDE: "neutral",
 };
 
 const LABELS: Record<string, string> = {
@@ -51,6 +57,11 @@ const LABELS: Record<string, string> = {
   COMPLETED: "Completado",
   PUBLISHED: "Publicado",
   CLOSED: "Cerrado",
+  ACTIVE: "Activo",
+  OWNER: "Owner",
+  ADMIN: "Admin",
+  AGENT: "Agente",
+  GUIDE: "Guía",
 };
 
 export function Badge({ value }: { value: string }) {

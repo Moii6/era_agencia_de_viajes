@@ -201,13 +201,18 @@ app/
                      — el botón "Editar" solo se muestra si el rol de sesión
                      es OWNER o ADMIN (PATCH /tenants/me es solo para esos
                      roles); primera pantalla del frontend con gating de UI
-                     por rol
+                     por rol. También incluye la sección "Usuarios" (listar +
+                     registrar, sin edición/borrado — el backend no los
+                     tiene), oculta por completo para AGENT/GUIDE porque
+                     GET /users también es solo OWNER/ADMIN
 components/
   ui/        ✅ Modal (soporta size md/lg), Badge (reutilizables entre módulos)
   forms/     ✅ ClientForm, ProviderForm, TripForm, BusForm, RoomTypeForm,
              ActivityForm, QuoteForm (alta), QuoteEditForm (notas/vigencia),
              OccupancyForm, ReservationForm (alta), TravelerForm, DepositForm,
-             TenantForm (mismo patrón por módulo)
+             TenantForm, UserForm (alta) (mismo patrón por módulo)
+  tenant/    ✅ UsersSection (lista de usuarios de la agencia + alta,
+             visible solo dentro de agencia/ para OWNER/ADMIN)
   trips/     ✅ BusesSection, RoomTypesSection, ActivitiesSection (listas
              autocontenidas usadas en el detalle de viaje)
   quotes/    ✅ OccupanciesSection (ocupaciones + alta/borrado de actividades
@@ -216,7 +221,7 @@ components/
              por autobús), DepositsSection (anticipos, marca el inicial)
 lib/         ✅ api.ts (fetch autenticado + manejo de 401), auth.ts (sesión
              en localStorage, incluye el rol usado para gating de UI),
-             clients.ts, providers.ts, trips.ts, quotes.ts, tenant.ts,
+             clients.ts, providers.ts, trips.ts, quotes.ts, tenant.ts, users.ts,
              reservations.ts (tipos + llamadas por recurso, incluye
              QUOTE_TRANSITIONS y RESERVATION_TRANSITIONS espejo de los mapas
              del backend para la UI), formats.ts (formatDate compartido,
