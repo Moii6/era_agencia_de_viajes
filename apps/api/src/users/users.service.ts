@@ -13,12 +13,16 @@ import { UpdateUserDto } from './dto/update-user.dto';
 // The agency can have at most 2 OWNER accounts.
 const MAX_OWNERS_PER_TENANT = 2;
 
-// Two-owner approval workflow: once a tenant has 2 active OWNERs, every
-// create/edit by anyone (owner or admin) sits pending until the *other*
-// OWNER approves it. Below that — a brand-new tenant with only its
-// founding OWNER — there's nobody else to check them, so changes apply
-// immediately; otherwise the very first user they ever add would be
-// permanently stuck with no one able to approve it.
+// Consensus approval workflow: once a tenant has 2 active OWNERs, every
+// create/edit sits pending until *every other* active OWNER approves it —
+// with a max of 2 owners, that means both of them have to sign off when
+// neither is the requester (a public self-registration), or the one who
+// isn't the requester has to (an internal alta/edit). Below 2 active
+// owners — a brand-new tenant with only its founding OWNER — there's
+// nobody else to check them, so internal changes apply immediately;
+// otherwise the very first user they ever add would be permanently stuck
+// with no one able to approve it. Public self-registration is the
+// exception to that exception — see registerPublic.
 const APPROVAL_REQUIRED_FROM_OWNER_COUNT = 2;
 
 const SELECT_FIELDS = {
@@ -33,6 +37,7 @@ const SELECT_FIELDS = {
   pendingName: true,
   pendingEmail: true,
   pendingRole: true,
+  approvedByUserIds: true,
   requestedBy: { select: { id: true, name: true } },
 } as const;
 
@@ -97,7 +102,10 @@ export class UsersService {
   // The bootstrap exception in approvalIsRequired exists so a founding
   // OWNER isn't stuck approving their own internal hires; it was never meant
   // to let an anonymous public signup auto-activate just because the agency
-  // only has one OWNER so far.
+  // only has one OWNER so far. Because there's no requester, approving it
+  // requires every active OWNER's sign-off (see approve/requiredApproverIds)
+  // rather than just one — with 1 owner that's still just that one, but
+  // with 2 it takes both.
   async registerPublic(slug: string, dto: RegisterUserDto) {
     const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
     if (!tenant) {
@@ -168,11 +176,14 @@ export class UsersService {
           pendingName: null,
           pendingEmail: null,
           pendingRole: null,
+          approvedByUserIds: [],
         },
         select: SELECT_FIELDS,
       });
     }
 
+    // A fresh proposal replaces whatever was staged before — any prior
+    // partial approvals were for that earlier proposal, not this one.
     return this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -180,22 +191,46 @@ export class UsersService {
         pendingEmail: nextEmail ?? target.email,
         pendingRole: nextRole,
         requestedByUserId: requesterId,
+        approvedByUserIds: [],
       },
       select: SELECT_FIELDS,
     });
   }
 
   async approve(tenantId: string, approverId: string, userId: string) {
-    const target = await this.assertHasPendingRequest(
+    const target = await this.assertCanReview(tenantId, approverId, userId);
+
+    if (target.approvedByUserIds.includes(approverId)) {
+      throw new BadRequestException(
+        'Ya diste tu aprobación — falta la de otro OWNER',
+      );
+    }
+
+    const required = await this.requiredApproverIds(
       tenantId,
-      approverId,
-      userId,
+      target.requestedByUserId,
     );
+    const approvedSoFar = [...target.approvedByUserIds, approverId];
+    const stillMissing = required.filter((id) => !approvedSoFar.includes(id));
+
+    if (stillMissing.length > 0) {
+      // Not everyone required has signed off yet — record this approval
+      // and keep waiting; the change itself doesn't take effect yet.
+      return this.prisma.user.update({
+        where: { id: userId },
+        data: { approvedByUserIds: approvedSoFar },
+        select: SELECT_FIELDS,
+      });
+    }
 
     if (target.status === 'PENDING') {
       return this.prisma.user.update({
         where: { id: userId },
-        data: { status: 'ACTIVE', requestedByUserId: null },
+        data: {
+          status: 'ACTIVE',
+          requestedByUserId: null,
+          approvedByUserIds: [],
+        },
         select: SELECT_FIELDS,
       });
     }
@@ -210,18 +245,17 @@ export class UsersService {
         pendingEmail: null,
         pendingRole: null,
         requestedByUserId: null,
+        approvedByUserIds: [],
       },
       select: SELECT_FIELDS,
     });
   }
 
   async reject(tenantId: string, approverId: string, userId: string) {
-    const target = await this.assertHasPendingRequest(
-      tenantId,
-      approverId,
-      userId,
-    );
+    const target = await this.assertCanReview(tenantId, approverId, userId);
 
+    // Rejecting only takes one dissenting OWNER — vetoing a bad request
+    // shouldn't need the same consensus that approving it does.
     if (target.status === 'PENDING') {
       return this.prisma.user.delete({
         where: { id: userId },
@@ -236,6 +270,7 @@ export class UsersService {
         pendingEmail: null,
         pendingRole: null,
         requestedByUserId: null,
+        approvedByUserIds: [],
       },
       select: SELECT_FIELDS,
     });
@@ -283,7 +318,7 @@ export class UsersService {
     });
   }
 
-  private async assertHasPendingRequest(
+  private async assertCanReview(
     tenantId: string,
     approverId: string,
     userId: string,
@@ -303,22 +338,36 @@ export class UsersService {
     }
     // requestedByUserId is null for a public self-registration (nobody
     // authenticated requested it), so there's no self-approval risk to
-    // guard against in that case — any OWNER can review it.
+    // guard against in that case.
     if (target.requestedByUserId && target.requestedByUserId === approverId) {
       throw new BadRequestException(
-        'No puedes aprobar o rechazar tu propia solicitud — necesitas al otro OWNER',
+        'No puedes aprobar o rechazar tu propia solicitud — necesitas a otro OWNER',
       );
     }
 
     return target;
   }
 
-  /** Whether the tenant already has enough active OWNERs that a create/edit needs the other one's sign-off. */
+  /** Whether the tenant already has enough active OWNERs that an internal create/edit needs sign-off at all. */
   private async approvalIsRequired(tenantId: string) {
     const activeOwners = await this.prisma.user.count({
       where: { tenantId, role: 'OWNER', status: 'ACTIVE' },
     });
     return activeOwners >= APPROVAL_REQUIRED_FROM_OWNER_COUNT;
+  }
+
+  /** Every active OWNER except the requester (if the requester is one) — who has to sign off before a pending change applies. */
+  private async requiredApproverIds(
+    tenantId: string,
+    requestedByUserId: string | null,
+  ) {
+    const activeOwners = await this.prisma.user.findMany({
+      where: { tenantId, role: 'OWNER', status: 'ACTIVE' },
+      select: { id: true },
+    });
+    return activeOwners
+      .map((owner) => owner.id)
+      .filter((id) => id !== requestedByUserId);
   }
 
   private async assertOwnerCapNotExceeded(

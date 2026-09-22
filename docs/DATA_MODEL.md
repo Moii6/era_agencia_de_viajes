@@ -115,17 +115,18 @@ solo el propio OWNER/ADMIN del tenant puede editar estos datos vía `PATCH /tena
 
 ### User
 Base sin cambios respecto a v1 (se mantiene `role` con `GUIDE` para fase 2). Se agregó soporte para
-el flujo de aprobación de doble OWNER (máximo 2 `OWNER` por tenant; con 2 activos, toda alta o
-edición de usuario requiere aprobación del *otro* OWNER — ver PLANNING.md §"Edición de usuarios con
-aprobación de doble OWNER" para el detalle):
+el flujo de aprobación por consenso de OWNERs (máximo 2 `OWNER` por tenant; con 2 activos, toda
+alta o edición de usuario requiere la aprobación de **todos los OWNERs activos excepto quien la
+solicitó** — ver PLANNING.md §"Aprobación por consenso de todos los OWNERs" para el detalle):
 
 | Campo | Tipo | Notas |
 |---|---|---|
 | status | enum ACTIVE/INACTIVE/PENDING | `PENDING` = alta sin aprobar todavía; bloquea login |
-| requestedByUserId | uuid FK → User? | Quién pidió el alta/edición pendiente |
+| requestedByUserId | uuid FK → User? | Quién pidió el alta/edición pendiente; `null` en un registro público |
 | pendingName | string? | Propuesta de edición, no aplicada hasta aprobar |
 | pendingEmail | string? | Ídem |
 | pendingRole | enum UserRole? | Ídem |
+| approvedByUserIds | uuid[] | OWNERs que ya aprobaron esta propuesta; se resetea a `[]` al aplicarse o al reemplazarse por una nueva propuesta |
 
 ### Client / Interaction
 Sin cambios respecto a v1 (ver historial).
@@ -489,6 +490,7 @@ model User {
   pendingName       String?
   pendingEmail      String?
   pendingRole       UserRole?
+  approvedByUserIds String[]   @default([])
 
   clientsOwned      Client[]      @relation("ClientOwner")
   interactions      Interaction[]

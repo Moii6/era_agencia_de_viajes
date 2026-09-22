@@ -424,6 +424,42 @@ usaba en ningún lado hasta ahora). Diseño:
   inmediato sigue fallando (correcto, sigue pendiente), y el registro aparece en "Mi Agencia" con
   "solicitada por —" y los botones Aprobar/Rechazar visibles para cualquier OWNER.
 
+**Aprobación por consenso de todos los OWNERs (2026-09-22, mismo día):** el usuario probó el
+registro público con la agencia "Viajes Gomez" y reportó el bug: entró como un solo OWNER, le dio
+"Aprobar" y el usuario se activó de inmediato — "no espero a que un segundo owner le diera
+aprobar". El diseño anterior (cualquier OWNER *distinto al solicitante* aprueba y listo) alcanzaba
+para una alta interna con 2 OWNERs (1 solicitante + 1 aprobador = ya son los 2), pero un registro
+público no tiene solicitante, así que "cualquier OWNER menos el solicitante" terminaba siendo
+"cualquier OWNER, punto" — bastaba uno. Se corrigió para exigir consenso real: **todos los OWNERs
+activos excepto quien lo pidió** (si nadie lo pidió, como en un registro público, eso es todos).
+Diseño:
+- `User` gana `approvedByUserIds: String[]` (migración `20260922034634_user_consensus_approval`) —
+  acumula cada aprobación de OWNER a medida que llega, en vez de aplicar el cambio con la primera.
+- `UsersService.requiredApproverIds(tenantId, requestedByUserId)` calcula el set exacto: todos los
+  OWNER `ACTIVE` del tenant, quitando al solicitante si lo hay. Con 2 OWNERs y un solicitante, el
+  set tiene 1 (el otro OWNER) — igual que antes. Con 2 OWNERs y sin solicitante (registro público),
+  el set tiene 2 — ambos deben aprobar. Esto generaliza limpio: el caso ya probado (alta interna)
+  no cambió de comportamiento, solo el caso sin solicitante.
+- `approve()` agrega al aprobador a `approvedByUserIds` y solo aplica el cambio (activar el alta, o
+  copiar los campos `pending*` a los reales) cuando `approvedByUserIds` ya cubre todo
+  `requiredApproverIds`; si falta alguien, guarda el progreso y devuelve el usuario todavía
+  `PENDING`/con `pending*` intactos. Intentar aprobar dos veces el mismo OWNER da 400 ("Ya diste tu
+  aprobación — falta la de otro OWNER"). `reject()` no cambió — sigue bastando un solo OWNER
+  disidente para vetar, no se le pidió consenso a eso.
+- Una propuesta nueva (una edición que reemplaza otra editada) resetea `approvedByUserIds: []` —
+  las aprobaciones eran para la propuesta anterior, no para esta.
+- Frontend (`UsersSection`): cada fila con algo pendiente calcula localmente
+  `requiredApproverIds`/`approvedByUserIds.length` (mismos OWNERs activos que ya trae la lista, sin
+  endpoint nuevo) y muestra "X de Y aprobaciones". El botón "Aprobar" desaparece para un OWNER que
+  ya aprobó (queda "Ya diste tu aprobación — falta la de otro OWNER"), pero "Rechazar" se mantiene
+  visible siempre que pueda revisar — vetar no debería requerir haber aprobado antes.
+- Verificado por curl reproduciendo el bug exacto: registro público → OWNER A aprueba → usuario
+  sigue `PENDING` con `approvedByUserIds: [A]` (antes se activaba aquí) → A intenta aprobar de
+  nuevo → 400 → OWNER B aprueba → recién ahí `status: ACTIVE`. También con dos sesiones Playwright
+  reales (contexts separados por OWNER): "0 de 2 aprobaciones" antes de cualquier voto, "1 de 2"
+  tras el primero (con el botón "Aprobar" ya oculto para quien votó y "Rechazar" disponible para
+  ambos), fila pasa a "Activo" recién tras el segundo voto.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
@@ -437,8 +473,12 @@ usaba en ningún lado hasta ahora). Diseño:
 9. Cada `Interaction` debe reportar quién la registró y cuándo.
 10. Máximo 2 usuarios con rol `OWNER` por tenant (cuenta `ACTIVE` + `PENDING`), validado tanto en
     alta como en edición de rol.
-11. Con 2+ OWNERs activos, toda alta o edición de usuario queda `PENDING` hasta que el *otro* OWNER
-    la apruebe — nunca el mismo que la solicitó. Con 0-1 OWNER activo no aplica (bootstrap).
+11. Con 2+ OWNERs activos, toda alta o edición de usuario queda `PENDING`/con cambios en espera
+    hasta que **todos los OWNERs activos, excepto quien la solicitó**, la aprueben (consenso, no
+    basta uno solo) — con 2 OWNERs y solicitante, eso es el otro OWNER; sin solicitante (registro
+    público), son todos. Rechazar sigue bastando con un solo OWNER disidente. Con 0-1 OWNER activo
+    no aplica la parte de bootstrap (alta/edición interna se auto-aprueba), pero el registro
+    público nunca se auto-aprueba (regla 13).
 12. Desactivar/reactivar un usuario es inmediato, sin aprobación — un OWNER no puede desactivarse a
     sí mismo.
 13. El registro público (`POST /tenants/:slug/register`) siempre crea el usuario en `PENDING` con

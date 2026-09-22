@@ -118,18 +118,23 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  // Two-owner approval workflow: a create/edit by one OWNER (or an ADMIN)
-  // sits pending until the *other* OWNER approves it — see UsersService.
-  // A brand-new user awaiting approval has status PENDING and its real
-  // fields already hold the proposed data. An edit to an already-ACTIVE
-  // user instead stages the proposal in pendingName/pendingEmail/pendingRole,
-  // leaving the live fields untouched until approved.
+  // Consensus approval workflow: a create/edit sits pending until every
+  // *other* active OWNER approves it (with 2 owners total, that's the one
+  // other owner; a public self-registration has no requester, so it needs
+  // every active OWNER's sign-off) — see UsersService. A brand-new user
+  // awaiting approval has status PENDING and its real fields already hold
+  // the proposed data. An edit to an already-ACTIVE user instead stages the
+  // proposal in pendingName/pendingEmail/pendingRole, leaving the live
+  // fields untouched until approved. approvedByUserIds accumulates each
+  // OWNER's sign-off as it comes in; the change only applies once it covers
+  // every required approver.
   requestedByUserId String?
   requestedBy       User?     @relation("UserApprovalRequests", fields: [requestedByUserId], references: [id])
   approvalRequests  User[]    @relation("UserApprovalRequests")
   pendingName       String?
   pendingEmail      String?
   pendingRole       UserRole?
+  approvedByUserIds String[]  @default([])
 
   clientsOwned     Client[]      @relation("ClientOwner")
   interactions     Interaction[]

@@ -33,6 +33,16 @@ function describePendingChange(user: AgencyUser) {
   return changes.length > 0 ? changes.join(", ") : null;
 }
 
+// Consensus needs every active OWNER except the requester (if the requester
+// is one) — mirrors UsersService.requiredApproverIds so the UI can show
+// progress without a dedicated endpoint for it.
+function approvalProgress(users: AgencyUser[], target: AgencyUser) {
+  const activeOwnerIds = users.filter((u) => u.role === "OWNER" && u.status === "ACTIVE").map((u) => u.id);
+  const requiredIds = activeOwnerIds.filter((id) => id !== target.requestedByUserId);
+  const approvedCount = target.approvedByUserIds.filter((id) => requiredIds.includes(id)).length;
+  return { requiredCount: requiredIds.length, approvedCount };
+}
+
 type UsersSectionProps = {
   currentUserId: string;
   currentUserRole: string;
@@ -139,7 +149,10 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
             const pendingChangeSummary = describePendingChange(agencyUser);
             const hasSomethingPending = isPendingCreation || pendingChangeSummary !== null;
             const isRequester = agencyUser.requestedByUserId === currentUserId;
-            const canReview = currentUserRole === "OWNER" && !isRequester && hasSomethingPending;
+            const alreadyApproved = agencyUser.approvedByUserIds.includes(currentUserId);
+            const canApprove = currentUserRole === "OWNER" && !isRequester && hasSomethingPending && !alreadyApproved;
+            const canReject = currentUserRole === "OWNER" && !isRequester && hasSomethingPending;
+            const { requiredCount, approvedCount } = approvalProgress(users, agencyUser);
             const isSelf = agencyUser.id === currentUserId;
             const canToggleStatus =
               currentUserRole === "OWNER" && !isSelf && (agencyUser.status === "ACTIVE" || agencyUser.status === "INACTIVE");
@@ -200,8 +213,9 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
                       {isPendingCreation
                         ? `Alta pendiente de aprobación · solicitada por ${agencyUser.requestedBy?.name ?? "—"}`
                         : `Cambio pendiente de aprobación (solicitado por ${agencyUser.requestedBy?.name ?? "—"}): ${pendingChangeSummary}`}
+                      {requiredCount > 0 ? ` · ${approvedCount} de ${requiredCount} aprobaciones` : null}
                     </p>
-                    {canReview ? (
+                    {canApprove ? (
                       <div className="mt-2 flex gap-2">
                         <button
                           onClick={() => handleApprove(agencyUser)}
@@ -216,9 +230,19 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
                           Rechazar
                         </button>
                       </div>
+                    ) : canReject ? (
+                      <div className="mt-2 flex items-center gap-2">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Ya diste tu aprobación — falta la de otro OWNER.</p>
+                        <button
+                          onClick={() => handleReject(agencyUser)}
+                          className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-800 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                        >
+                          Rechazar
+                        </button>
+                      </div>
                     ) : (
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {isRequester ? "Esperando aprobación del otro OWNER." : "Solo un OWNER distinto al solicitante puede revisar esto."}
+                        {isRequester ? "Esperando aprobación de los demás OWNER." : "Solo un OWNER distinto al solicitante puede revisar esto."}
                       </p>
                     )}
                   </div>

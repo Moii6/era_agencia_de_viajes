@@ -11,14 +11,18 @@ export type AgencyUser = {
   status: UserStatus;
   lastLoginAt: string | null;
   createdAt: string;
-  // Two-owner approval workflow: requestedByUserId is set whenever this user
+  // Consensus approval workflow: requestedByUserId is set whenever this user
   // has something awaiting sign-off — either the user itself (status
   // PENDING) or a proposed edit staged in pendingName/pendingEmail/pendingRole.
+  // Applying it needs every other active OWNER's approval, tracked here as
+  // they come in — the frontend doesn't know the required count on its own,
+  // it's derived from how many active OWNERs exist (see UsersSection).
   requestedByUserId: string | null;
   requestedBy: { id: string; name: string } | null;
   pendingName: string | null;
   pendingEmail: string | null;
   pendingRole: UserRole | null;
+  approvedByUserIds: string[];
 };
 
 export type UserInput = {
