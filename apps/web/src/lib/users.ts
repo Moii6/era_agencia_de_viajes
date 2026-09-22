@@ -42,6 +42,10 @@ export function listUsers() {
   return apiFetch<AgencyUser[]>("/users");
 }
 
+export function getMe() {
+  return apiFetch<AgencyUser>("/users/me");
+}
+
 export function createUser(input: UserInput) {
   return apiFetch<AgencyUser>("/users", { method: "POST", body: JSON.stringify(input) });
 }

@@ -460,6 +460,35 @@ Diseño:
   tras el primero (con el botón "Aprobar" ya oculto para quien votó y "Rechazar" disponible para
   ambos), fila pasa a "Activo" recién tras el segundo voto.
 
+**Sección "Mi perfil" y exclusión de uno mismo en la lista de usuarios (2026-09-22):** el usuario
+notó dos huecos: no existía ninguna vista de los propios datos de sesión (nombre, email, rol, último
+acceso), y la lista "Usuarios" de "Mi Agencia" mezclaba la fila del propio OWNER/ADMIN con las de
+los demás — administrar y verse a uno mismo en el mismo lugar no tenía sentido. Diseño:
+- `UsersSection` ahora filtra `users.filter(u => u.id !== currentUserId)` antes de renderizar —
+  la lista de "Usuarios" solo muestra a los demás. El cálculo de consenso (`approvalProgress`) sigue
+  usando la lista completa sin filtrar, así que el conteo de OWNERs activos no cambia.
+- Nuevo componente `MyProfileCard`, visible para **cualquier rol** (no solo OWNER/ADMIN como
+  `UsersSection`) — usa `GET /users/me`, que ya existía y ya estaba abierto a los 4 roles. Muestra
+  nombre, badges de rol/status, email, último acceso, y — si hay un cambio propio pendiente — el
+  mismo patrón de nota + Aprobar/Rechazar que `UsersSection` (relevante cuando un ADMIN edita a un
+  OWNER: el propio OWNER afectado necesita poder revisarlo, y ya no aparece en la lista general para
+  hacerlo ahí).
+- Quitar la fila propia de `UsersSection` también le quitaba a un OWNER/ADMIN la única forma que
+  tenía de editarse a sí mismo (antes bastaba el botón "Editar" de su propia fila en esa lista). Para
+  no perder esa capacidad, `MyProfileCard` incluye su propio botón "Editar" (mismo `UserForm` +
+  `updateUser`), visible solo para OWNER/ADMIN — igual que el guard `@Roles('OWNER', 'ADMIN')` que ya
+  tenía `PATCH /users/:id` en el backend; AGENT/GUIDE ven sus datos pero no el botón, porque el
+  backend les rechazaría la edición de todas formas.
+- Sin cambios de backend — `GET /users/me` y `PATCH /users/:id` ya existían con las reglas correctas;
+  esto fue puramente relocalizar UI que ya existía a un lugar más claro.
+- Ubicación: la tarjeta "Mi perfil" se agregó a la página `/agencia`, arriba de la cuadrícula de
+  datos de la agencia, sin la condición `canEdit` que sí sigue aplicando a `UsersSection` — un AGENT
+  o GUIDE ya podía entrar a `/agencia` (ve los datos de la agencia) pero antes no veía nada sobre sí
+  mismo ahí; ahora sí.
+- Verificado con Playwright: el email propio del OWNER aparece una sola vez en la página (en "Mi
+  perfil", no repetido en "Usuarios"), los demás usuarios (incluido el otro OWNER) sí aparecen en
+  "Usuarios" con sus controles normales, y "Mi perfil" muestra el botón "Editar" para el OWNER.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

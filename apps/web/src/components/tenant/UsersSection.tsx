@@ -141,10 +141,12 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
       <div className="mt-3 space-y-2">
         {users === null ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>
-        ) : users.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">Sin usuarios todavía.</p>
+        ) : users.filter((u) => u.id !== currentUserId).length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">Sin otros usuarios todavía.</p>
         ) : (
-          users.map((agencyUser) => {
+          users
+            .filter((agencyUser) => agencyUser.id !== currentUserId)
+            .map((agencyUser) => {
             const isPendingCreation = agencyUser.status === "PENDING";
             const pendingChangeSummary = describePendingChange(agencyUser);
             const hasSomethingPending = isPendingCreation || pendingChangeSummary !== null;
@@ -153,9 +155,8 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
             const canApprove = currentUserRole === "OWNER" && !isRequester && hasSomethingPending && !alreadyApproved;
             const canReject = currentUserRole === "OWNER" && !isRequester && hasSomethingPending;
             const { requiredCount, approvedCount } = approvalProgress(users, agencyUser);
-            const isSelf = agencyUser.id === currentUserId;
             const canToggleStatus =
-              currentUserRole === "OWNER" && !isSelf && (agencyUser.status === "ACTIVE" || agencyUser.status === "INACTIVE");
+              currentUserRole === "OWNER" && (agencyUser.status === "ACTIVE" || agencyUser.status === "INACTIVE");
 
             return (
               <div
