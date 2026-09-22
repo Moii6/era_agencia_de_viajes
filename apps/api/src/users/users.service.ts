@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { UserRole } from '@erp/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -137,6 +139,7 @@ export class UsersService {
   async update(
     tenantId: string,
     requesterId: string,
+    requesterRole: UserRole,
     userId: string,
     dto: UpdateUserDto,
   ) {
@@ -159,6 +162,12 @@ export class UsersService {
     }
 
     const nextRole = dto.role ?? target.role;
+    // Only OWNER can change a role — an ADMIN keeps the ability to edit
+    // name/email, but not to promote anyone (including themselves) to a
+    // more privileged role.
+    if (nextRole !== target.role && requesterRole !== 'OWNER') {
+      throw new ForbiddenException('Solo un OWNER puede cambiar el rol de un usuario');
+    }
     if (nextRole === 'OWNER' && target.role !== 'OWNER') {
       await this.assertOwnerCapNotExceeded(tenantId, userId);
     }

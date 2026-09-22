@@ -149,7 +149,12 @@ export function MyProfileCard({ currentUserRole }: MyProfileCardProps) {
 
       {showEditModal ? (
         <Modal title="Editar mi perfil" onClose={() => setShowEditModal(false)}>
-          <UserForm user={me} onSubmit={handleEdit} onCancel={() => setShowEditModal(false)} />
+          <UserForm
+            user={me}
+            canEditRole={currentUserRole === "OWNER"}
+            onSubmit={handleEdit}
+            onCancel={() => setShowEditModal(false)}
+          />
         </Modal>
       ) : null}
     </div>

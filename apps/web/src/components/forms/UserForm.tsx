@@ -17,11 +17,16 @@ const labelClass = "mb-1.5 block text-sm font-medium text-slate-700 dark:text-sl
 
 type UserFormProps = {
   user?: AgencyUser;
+  // Only relevant when editing an existing user — role changes are
+  // OWNER-only (the backend rejects them otherwise), so a non-OWNER editor
+  // sees the current role as read-only instead of a selector. Creating a
+  // new user always lets the creator pick the initial role.
+  canEditRole?: boolean;
   onSubmit: (input: UserInput | UserUpdateInput) => Promise<unknown>;
   onCancel: () => void;
 };
 
-export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
+export function UserForm({ user, canEditRole = true, onSubmit, onCancel }: UserFormProps) {
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [password, setPassword] = useState("");
@@ -98,13 +103,20 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
         <label htmlFor="role" className={labelClass}>
           Rol *
         </label>
-        <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className={inputClass}>
-          {ROLE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        {!user || canEditRole ? (
+          <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className={inputClass}>
+            {ROLE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p className="text-sm text-slate-700 dark:text-slate-300">
+            {ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role}
+            <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">(solo un OWNER puede cambiar el rol)</span>
+          </p>
+        )}
       </div>
 
       {user ? (

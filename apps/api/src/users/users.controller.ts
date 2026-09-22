@@ -49,7 +49,7 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.usersService.update(user.tenantId, user.userId, id, dto);
+    return this.usersService.update(user.tenantId, user.userId, user.role, id, dto);
   }
 
   // Approving/rejecting is OWNER-only by design — that's the whole point of

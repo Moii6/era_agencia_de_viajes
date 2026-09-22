@@ -256,7 +256,12 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
 
       {modalMode ? (
         <Modal title={modalMode === "edit" ? "Editar usuario" : "Registrar usuario"} onClose={closeModal}>
-          <UserForm user={editingUser ?? undefined} onSubmit={handleSubmit} onCancel={closeModal} />
+          <UserForm
+            user={editingUser ?? undefined}
+            canEditRole={currentUserRole === "OWNER"}
+            onSubmit={handleSubmit}
+            onCancel={closeModal}
+          />
         </Modal>
       ) : null}
     </div>

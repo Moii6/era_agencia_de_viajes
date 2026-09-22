@@ -563,6 +563,33 @@ viajes a los que está asignado (vía `TripGuide`), nada más; sin viajes asigna
   `/clientes`, `/proveedores`, `/cotizaciones`, `/reservas` o `/agencia` redirige a `/dashboard` (o
   `/perfil` en el caso de `/agencia`).
 
+**Cambiar el rol de un usuario es exclusivo de OWNER (2026-09-22, mismo día):** el usuario notó el
+hueco: como `PATCH /users/:id` era `@Roles('OWNER', 'ADMIN')` sin distinguir qué campo se está
+editando, un ADMIN podía proponer un cambio de rol tan bien como uno de nombre/email — incluido
+sobre su propia cuenta. Con 2+ OWNERs activos el flujo de consenso ya lo frenaba en la práctica
+(la propuesta queda `PENDING` esperando aprobación), pero seguía siendo una superficie de escalación
+de privilegios que no debería depender solo de cuántos OWNERs activos hay. Diseño:
+- `UsersService.update()` ahora recibe `requesterRole` (antes solo `requesterId`); si
+  `dto.role` difiere del rol actual del usuario objetivo y `requesterRole !== 'OWNER'`, lanza
+  `ForbiddenException` (403) antes de tocar nada más — un ADMIN sigue pudiendo editar
+  nombre/email de cualquier usuario (incluido el suyo vía "Mi perfil"), solo no el rol.
+  `UsersController.update()` pasa `user.role` al servicio.
+- Alta de usuarios (`create()`) no cambió — un ADMIN sigue pudiendo elegir el rol inicial al dar de
+  alta a alguien (esa es su capacidad ya establecida de "administrar usuarios"); la restricción es
+  específicamente sobre **editar** el rol de un usuario ya existente, tal como lo pidió el usuario.
+- Frontend (`UserForm`): nueva prop `canEditRole` (default `true`, solo importa al editar un usuario
+  existente — al crear uno nuevo el selector de rol siempre aparece). Cuando es `false`, el campo
+  "Rol" se muestra como texto de solo lectura con la nota "(solo un OWNER puede cambiar el rol)" en
+  vez de un `<select>`. `UsersSection` y `MyProfileCard` pasan `canEditRole={currentUserRole ===
+  "OWNER"}` — así un ADMIN editando a otro usuario, o editándose a sí mismo desde "Mi perfil", ve el
+  rol pero no puede tocarlo.
+- Verificado por curl con un ADMIN de prueba: intentar `PATCH` su propio rol a `OWNER` → 403
+  ("Solo un OWNER puede cambiar el rol de un usuario"); `PATCH` solo el nombre → 200 sin problema
+  (queda pendiente por el consenso de 2 OWNERs, como cualquier edición); un OWNER real proponiendo
+  el cambio de rol de ese ADMIN → 200 (también queda pendiente, esperando al otro OWNER — el
+  cambio de rol nunca se auto-aplica solo por venir de un OWNER, sigue el mismo flujo de consenso
+  que cualquier otra edición).
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
@@ -595,6 +622,10 @@ viajes a los que está asignado (vía `TripGuide`), nada más; sin viajes asigna
     Clientes/Proveedores/Cotizaciones/Reservas/Mi Agencia, ni viajes a los que no está asignado, ni
     los datos de un viaje ajeno a través de sus sub-recursos (buses/room-types/activities). Un GUIDE
     nunca puede crear ni editar un viaje ni sus sub-recursos — solo lectura de lo que le corresponde.
+16. Cambiar el rol de un usuario ya existente (`PATCH /users/:id` con `role` distinto al actual) es
+    exclusivo de OWNER — un ADMIN puede editar nombre/email de cualquier usuario (incluido el suyo)
+    pero nunca su rol, ni el propio ni el de nadie más. Esto no aplica al alta (`POST /users`): ahí
+    el ADMIN sigue eligiendo el rol inicial con el que crea a alguien.
 
 ### 7.4 Orden recomendado de implementación
 
