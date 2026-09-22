@@ -135,6 +135,16 @@ export default function Home() {
               <p className="mt-1">Email: owner@agenciadeprueba.mx</p>
               <p>Password: changeme123</p>
             </div>
+
+            {process.env.NODE_ENV === "development" ? (
+              <button
+                type="button"
+                onClick={() => router.push("/registro/agencia-de-prueba")}
+                className="mt-3 w-full rounded-xl border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                [Dev] Ir al registro del tenant de prueba
+              </button>
+            ) : null}
           </div>
         </section>
       </div>
