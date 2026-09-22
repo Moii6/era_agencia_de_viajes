@@ -71,4 +71,25 @@ export class UsersController {
   ) {
     return this.usersService.reject(user.tenantId, user.userId, id);
   }
+
+  // Deactivate/reactivate are also OWNER-only, but — unlike approve/reject —
+  // deliberately immediate: revoking access is a security response, not
+  // something that should wait on the other OWNER's sign-off.
+  @Post(':id/deactivate')
+  @Roles('OWNER')
+  async deactivate(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.usersService.deactivate(user.tenantId, user.userId, id);
+  }
+
+  @Post(':id/reactivate')
+  @Roles('OWNER')
+  async reactivate(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.usersService.reactivate(user.tenantId, id);
+  }
 }

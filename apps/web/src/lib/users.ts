@@ -53,3 +53,11 @@ export function approveUser(id: string) {
 export function rejectUser(id: string) {
   return apiFetch<AgencyUser>(`/users/${id}/reject`, { method: "POST" });
 }
+
+export function deactivateUser(id: string) {
+  return apiFetch<AgencyUser>(`/users/${id}/deactivate`, { method: "POST" });
+}
+
+export function reactivateUser(id: string) {
+  return apiFetch<AgencyUser>(`/users/${id}/reactivate`, { method: "POST" });
+}

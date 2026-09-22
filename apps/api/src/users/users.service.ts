@@ -41,7 +41,7 @@ export class UsersService {
 
   async findAll(tenantId: string) {
     return this.prisma.user.findMany({
-      where: { tenantId, status: { in: ['ACTIVE', 'PENDING'] } },
+      where: { tenantId },
       select: SELECT_FIELDS,
       orderBy: { createdAt: 'desc' },
     });
@@ -202,6 +202,48 @@ export class UsersService {
         pendingRole: null,
         requestedByUserId: null,
       },
+      select: SELECT_FIELDS,
+    });
+  }
+
+  // Deactivation is deliberately immediate and unilateral — unlike create/
+  // edit, it's a security response (someone left the agency, access needs
+  // to go away now), so it skips the two-owner approval flow on purpose.
+  // Reactivating is the same: one OWNER can undo a deactivation on their own.
+  async deactivate(tenantId: string, requesterId: string, userId: string) {
+    if (userId === requesterId) {
+      throw new BadRequestException('No puedes desactivar tu propia cuenta');
+    }
+
+    const target = await this.findRaw(tenantId, userId);
+    if (target.status !== 'ACTIVE') {
+      throw new BadRequestException(
+        'Solo se puede desactivar un usuario activo',
+      );
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { status: 'INACTIVE' },
+      select: SELECT_FIELDS,
+    });
+  }
+
+  async reactivate(tenantId: string, userId: string) {
+    const target = await this.findRaw(tenantId, userId);
+    if (target.status !== 'INACTIVE') {
+      throw new BadRequestException(
+        'Solo se puede reactivar un usuario inactivo',
+      );
+    }
+
+    if (target.role === 'OWNER') {
+      await this.assertOwnerCapNotExceeded(tenantId, userId);
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { status: 'ACTIVE' },
       select: SELECT_FIELDS,
     });
   }

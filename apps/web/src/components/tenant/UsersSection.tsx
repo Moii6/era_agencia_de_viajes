@@ -10,7 +10,9 @@ import {
   AgencyUser,
   approveUser,
   createUser,
+  deactivateUser,
   listUsers,
+  reactivateUser,
   rejectUser,
   updateUser,
   UserInput,
@@ -85,6 +87,25 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
     }
   }
 
+  async function handleDeactivate(user: AgencyUser) {
+    if (!confirm(`¿Desactivar a "${user.name}"? Perderá acceso de inmediato.`)) return;
+    try {
+      await deactivateUser(user.id);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudo desactivar");
+    }
+  }
+
+  async function handleReactivate(user: AgencyUser) {
+    try {
+      await reactivateUser(user.id);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudo reactivar");
+    }
+  }
+
   function closeModal() {
     setModalMode(null);
     setEditingUser(null);
@@ -119,6 +140,9 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
             const hasSomethingPending = isPendingCreation || pendingChangeSummary !== null;
             const isRequester = agencyUser.requestedByUserId === currentUserId;
             const canReview = currentUserRole === "OWNER" && !isRequester && hasSomethingPending;
+            const isSelf = agencyUser.id === currentUserId;
+            const canToggleStatus =
+              currentUserRole === "OWNER" && !isSelf && (agencyUser.status === "ACTIVE" || agencyUser.status === "INACTIVE");
 
             return (
               <div
@@ -139,17 +163,35 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
                         : " · Sin accesos todavía"}
                     </p>
                   </div>
-                  {!isPendingCreation ? (
-                    <button
-                      onClick={() => {
-                        setEditingUser(agencyUser);
-                        setModalMode("edit");
-                      }}
-                      className="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                    >
-                      Editar
-                    </button>
-                  ) : null}
+                  <div className="flex shrink-0 gap-2">
+                    {!isPendingCreation ? (
+                      <button
+                        onClick={() => {
+                          setEditingUser(agencyUser);
+                          setModalMode("edit");
+                        }}
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                      >
+                        Editar
+                      </button>
+                    ) : null}
+                    {canToggleStatus && agencyUser.status === "ACTIVE" ? (
+                      <button
+                        onClick={() => handleDeactivate(agencyUser)}
+                        className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-800 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                      >
+                        Desactivar
+                      </button>
+                    ) : null}
+                    {canToggleStatus && agencyUser.status === "INACTIVE" ? (
+                      <button
+                        onClick={() => handleReactivate(agencyUser)}
+                        className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:bg-slate-800 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+                      >
+                        Reactivar
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
 
                 {hasSomethingPending ? (

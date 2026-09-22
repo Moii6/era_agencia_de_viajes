@@ -202,10 +202,11 @@ app/
                      es OWNER o ADMIN (PATCH /tenants/me es solo para esos
                      roles); primera pantalla del frontend con gating de UI
                      por rol. También incluye la sección "Usuarios" (listar,
-                     alta, edición — sin borrado, el backend no lo tiene),
-                     oculta por completo para AGENT/GUIDE porque GET /users
-                     también es solo OWNER/ADMIN. Alta y edición pasan por un
-                     flujo de aprobación del otro OWNER cuando ya hay 2 (ver
+                     alta, edición, desactivar/reactivar — sin borrado, el
+                     backend no lo tiene), oculta por completo para
+                     AGENT/GUIDE porque GET /users también es solo
+                     OWNER/ADMIN. Alta y edición pasan por un flujo de
+                     aprobación del otro OWNER cuando ya hay 2 (ver
                      "Edición de usuarios con aprobación de doble OWNER" más
                      abajo) — Aprobar/Rechazar solo visibles para el OWNER
                      que no fue quien solicitó el cambio
@@ -369,6 +370,20 @@ aprobación del *otro* OWNER antes de tomar efecto. Diseño:
   real nunca cambió. También probado por curl: 3er OWNER bloqueado contando pendientes, y editar un
   usuario `PENDING` de alta rechazado con mensaje claro.
 
+**Desactivar/reactivar usuarios (2026-09-21):** a diferencia de alta/edición, esto es deliberadamente
+**inmediato y sin aprobación** — se decidió así en conversación explícita con el usuario, razonando
+que revocar acceso es una respuesta de seguridad donde la urgencia pesa más que el control cruzado
+(y reactivar, si alguien se equivoca, es trivial). `POST /users/:id/deactivate` y `/reactivate` son
+OWNER-only pero no pasan por `requestedByUserId`/aprobación. Reglas: no puedes desactivarte a ti
+mismo (`userId === requesterId` → 400), solo se puede desactivar un usuario `ACTIVE` y solo
+reactivar uno `INACTIVE`, y reactivar a un OWNER vuelve a chequear el tope de 2 (por si desactivar
+y reactivar se usó para "rotar" el cupo). `findAll` dejó de filtrar por status — ahora se listan
+`ACTIVE`, `PENDING` e `INACTIVE` juntos, si no reactivar sería imposible desde la UI. Login ya
+rechazaba cualquier `status !== 'ACTIVE'`, así que desactivar bloquea acceso sin tocar `AuthService`.
+Verificado por curl (auto-desactivación bloqueada, login falla tras desactivar y vuelve a funcionar
+tras reactivar, doble-desactivación bloqueada) y en navegador: fila propia sin botón "Desactivar",
+el resto sí lo tiene, y el badge cambia a "Inactivo" con botón "Reactivar" en su lugar.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
@@ -384,6 +399,8 @@ aprobación del *otro* OWNER antes de tomar efecto. Diseño:
     alta como en edición de rol.
 11. Con 2+ OWNERs activos, toda alta o edición de usuario queda `PENDING` hasta que el *otro* OWNER
     la apruebe — nunca el mismo que la solicitó. Con 0-1 OWNER activo no aplica (bootstrap).
+12. Desactivar/reactivar un usuario es inmediato, sin aprobación — un OWNER no puede desactivarse a
+    sí mismo.
 
 ### 7.4 Orden recomendado de implementación
 
