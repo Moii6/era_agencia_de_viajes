@@ -1,14 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { UserRole } from '@erp/db';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
+
+type Requester = { id: string; role: UserRole };
 
 @Injectable()
 export class RoomTypesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAllForTrip(tenantId: string, tripId: string) {
-    await this.assertTripBelongsToTenant(tenantId, tripId);
+  async findAllForTrip(tenantId: string, tripId: string, requester?: Requester) {
+    await this.assertTripBelongsToTenant(tenantId, tripId, requester);
 
     return this.prisma.roomType.findMany({
       where: { tripId },
@@ -64,9 +67,17 @@ export class RoomTypesService {
     return roomType;
   }
 
-  private async assertTripBelongsToTenant(tenantId: string, tripId: string) {
+  private async assertTripBelongsToTenant(
+    tenantId: string,
+    tripId: string,
+    requester?: Requester,
+  ) {
     const trip = await this.prisma.trip.findFirst({
-      where: { id: tripId, tenantId },
+      where: {
+        id: tripId,
+        tenantId,
+        ...(requester?.role === 'GUIDE' ? { guides: { some: { userId: requester.id } } } : {}),
+      },
       select: { id: true },
     });
     if (!trip) {

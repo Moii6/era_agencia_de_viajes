@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { TripForm } from "@/components/forms/TripForm";
 import { ApiError } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 import { formatDate } from "@/lib/formats";
 import { createTrip, listTrips, Trip, TripInput, TripStatus } from "@/lib/trips";
 
@@ -24,6 +25,10 @@ export default function ViajesPage() {
   const [statusFilter, setStatusFilter] = useState<TripStatus | "ALL">("ALL");
   const [error, setError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  // Must start false (matching the server) and only flip inside an effect —
+  // reading localStorage synchronously during render would make the
+  // client's first paint diverge from the SSR HTML.
+  const [isGuide, setIsGuide] = useState(false);
 
   async function loadTrips() {
     setError("");
@@ -34,6 +39,10 @@ export default function ViajesPage() {
       setError(err instanceof ApiError ? err.message : "No se pudieron cargar los viajes");
     }
   }
+
+  useEffect(() => {
+    setIsGuide(getUser()?.role === "GUIDE");
+  }, []);
 
   useEffect(() => {
     loadTrips();
@@ -53,12 +62,14 @@ export default function ViajesPage() {
           <p className="text-sm uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400">Catálogo</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">Viajes</h1>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400"
-        >
-          + Nuevo viaje
-        </button>
+        {isGuide ? null : (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400"
+          >
+            + Nuevo viaje
+          </button>
+        )}
       </div>
 
       <div className="mt-6 flex gap-2">
@@ -104,7 +115,7 @@ export default function ViajesPage() {
             ) : trips.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-5 py-8 text-center text-slate-500 dark:text-slate-400">
-                  No hay viajes con este filtro todavía.
+                  {isGuide && statusFilter === "ALL" ? "No tienes viajes asignados." : "No hay viajes con este filtro todavía."}
                 </td>
               </tr>
             ) : (

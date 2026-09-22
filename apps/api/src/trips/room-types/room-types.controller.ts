@@ -19,7 +19,7 @@ import { RoomTypesService } from './room-types.service';
 
 @Controller('trips/:tripId/room-types')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('OWNER', 'ADMIN', 'AGENT')
+@Roles('OWNER', 'ADMIN', 'AGENT', 'GUIDE')
 export class RoomTypesController {
   constructor(private readonly roomTypesService: RoomTypesService) {}
 
@@ -28,7 +28,10 @@ export class RoomTypesController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('tripId') tripId: string,
   ) {
-    return this.roomTypesService.findAllForTrip(user.tenantId, tripId);
+    return this.roomTypesService.findAllForTrip(user.tenantId, tripId, {
+      id: user.userId,
+      role: user.role,
+    });
   }
 
   @Post()

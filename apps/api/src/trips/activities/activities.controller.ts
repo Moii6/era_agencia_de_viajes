@@ -19,7 +19,7 @@ import { UpdateActivityDto } from './dto/update-activity.dto';
 
 @Controller('trips/:tripId/activities')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('OWNER', 'ADMIN', 'AGENT')
+@Roles('OWNER', 'ADMIN', 'AGENT', 'GUIDE')
 export class ActivitiesController {
   constructor(private readonly activitiesService: ActivitiesService) {}
 
@@ -28,7 +28,10 @@ export class ActivitiesController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('tripId') tripId: string,
   ) {
-    return this.activitiesService.findAllForTrip(user.tenantId, tripId);
+    return this.activitiesService.findAllForTrip(user.tenantId, tripId, {
+      id: user.userId,
+      role: user.role,
+    });
   }
 
   @Post()

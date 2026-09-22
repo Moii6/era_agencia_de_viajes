@@ -3,16 +3,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { UserRole } from '@erp/db';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBusDto } from './dto/create-bus.dto';
 import { UpdateBusDto } from './dto/update-bus.dto';
+
+type Requester = { id: string; role: UserRole };
 
 @Injectable()
 export class BusesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAllForTrip(tenantId: string, tripId: string) {
-    await this.assertTripBelongsToTenant(tenantId, tripId);
+  async findAllForTrip(tenantId: string, tripId: string, requester?: Requester) {
+    await this.assertTripBelongsToTenant(tenantId, tripId, requester);
 
     return this.prisma.bus.findMany({
       where: { tripId },
@@ -72,9 +75,17 @@ export class BusesService {
     return bus;
   }
 
-  private async assertTripBelongsToTenant(tenantId: string, tripId: string) {
+  private async assertTripBelongsToTenant(
+    tenantId: string,
+    tripId: string,
+    requester?: Requester,
+  ) {
     const trip = await this.prisma.trip.findFirst({
-      where: { id: tripId, tenantId },
+      where: {
+        id: tripId,
+        tenantId,
+        ...(requester?.role === 'GUIDE' ? { guides: { some: { userId: requester.id } } } : {}),
+      },
       select: { id: true },
     });
     if (!trip) {

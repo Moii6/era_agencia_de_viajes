@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
+import { getUser } from "@/lib/auth";
 import { formatDate, todayUTCDateOnly, toUTCDateOnly } from "@/lib/formats";
 import { listTrips, Trip } from "@/lib/trips";
 
@@ -34,8 +35,13 @@ function TripCard({ label, trip, emptyMessage }: { label: string; trip: Trip | n
 
 export default function DashboardPage() {
   const [trips, setTrips] = useState<Trip[] | null>(null);
+  // Must start false (matching the server) and only flip inside an effect —
+  // reading localStorage synchronously during render would make the
+  // client's first paint diverge from the SSR HTML.
+  const [isGuide, setIsGuide] = useState(false);
 
   useEffect(() => {
+    setIsGuide(getUser()?.role === "GUIDE");
     listTrips()
       .then(setTrips)
       .catch(() => setTrips([]));
@@ -68,6 +74,10 @@ export default function DashboardPage() {
 
       {trips === null ? (
         <p className="mt-8 text-sm text-slate-500 dark:text-slate-400">Cargando viajes...</p>
+      ) : isGuide && trips.length === 0 ? (
+        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-sm text-slate-500 dark:text-slate-400">No tienes viajes asignados.</p>
+        </div>
       ) : (
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           <TripCard

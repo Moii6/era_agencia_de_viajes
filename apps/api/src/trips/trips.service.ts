@@ -3,18 +3,29 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { UserRole } from '@erp/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { QueryTripsDto } from './dto/query-trips.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 
+type Requester = { id: string; role: UserRole };
+
 @Injectable()
 export class TripsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(tenantId: string, query: QueryTripsDto) {
+  // A GUIDE may not be a fixed employee — they only ever see trips they're
+  // assigned to. Every other role sees the whole tenant. `requester` is
+  // omitted for internal calls (e.g. from update()) that don't need the
+  // guide restriction applied.
+  async findAll(tenantId: string, query: QueryTripsDto, requester?: Requester) {
     return this.prisma.trip.findMany({
-      where: { tenantId, ...(query.status ? { status: query.status } : {}) },
+      where: {
+        tenantId,
+        ...(query.status ? { status: query.status } : {}),
+        ...(requester?.role === 'GUIDE' ? { guides: { some: { userId: requester.id } } } : {}),
+      },
       orderBy: { departureDate: 'asc' },
       include: {
         hotelProvider: { select: { id: true, name: true } },
@@ -30,9 +41,13 @@ export class TripsService {
     });
   }
 
-  async findById(tenantId: string, id: string) {
+  async findById(tenantId: string, id: string, requester?: Requester) {
     const trip = await this.prisma.trip.findFirst({
-      where: { id, tenantId },
+      where: {
+        id,
+        tenantId,
+        ...(requester?.role === 'GUIDE' ? { guides: { some: { userId: requester.id } } } : {}),
+      },
       include: {
         hotelProvider: { select: { id: true, name: true } },
         buses: true,

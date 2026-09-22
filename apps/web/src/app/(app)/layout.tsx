@@ -14,6 +14,11 @@ const BASE_NAV_ITEMS = [
   { href: "/reservas", label: "Reservas" },
 ];
 
+// A GUIDE may not be a fixed agency employee — they only get the dashboard,
+// their assigned trips, and their own profile. Everything else (clients,
+// providers, quotes, reservations, agency admin) is off limits.
+const GUIDE_ALLOWED_PATHS = ["/dashboard", "/viajes", "/perfil"];
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -30,7 +35,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       return;
     }
     setUser(stored);
-  }, [router]);
+
+    if (stored.role === "GUIDE" && !GUIDE_ALLOWED_PATHS.some((p) => pathname === p || pathname?.startsWith(`${p}/`))) {
+      router.replace("/dashboard");
+    }
+  }, [router, pathname]);
 
   function logout() {
     clearSession();
@@ -44,10 +53,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Mi Agencia (tenant profile + user management) is OWNER/ADMIN territory;
   // everyone else gets their own profile view instead.
   const canManageUsers = user.role === "OWNER" || user.role === "ADMIN";
-  const navItems = [
-    ...BASE_NAV_ITEMS,
-    canManageUsers ? { href: "/agencia", label: "Mi Agencia" } : { href: "/perfil", label: "Mi Perfil" },
-  ];
+  const navItems =
+    user.role === "GUIDE"
+      ? [
+          { href: "/dashboard", label: "Dashboard" },
+          { href: "/viajes", label: "Viajes" },
+          { href: "/perfil", label: "Mi Perfil" },
+        ]
+      : [
+          ...BASE_NAV_ITEMS,
+          canManageUsers ? { href: "/agencia", label: "Mi Agencia" } : { href: "/perfil", label: "Mi Perfil" },
+        ];
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">

@@ -6,7 +6,7 @@ import { ActivityForm } from "@/components/forms/ActivityForm";
 import { ApiError } from "@/lib/api";
 import { Activity, ActivityInput, createActivity, deleteActivity, listActivities, updateActivity } from "@/lib/trips";
 
-export function ActivitiesSection({ tripId }: { tripId: string }) {
+export function ActivitiesSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
   const [activities, setActivities] = useState<Activity[] | null>(null);
   const [error, setError] = useState("");
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
@@ -50,15 +50,17 @@ export function ActivitiesSection({ tripId }: { tripId: string }) {
     <div>
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Actividades opcionales</h3>
-        <button
-          onClick={() => {
-            setEditingActivity(null);
-            setModalMode("create");
-          }}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-        >
-          + Agregar
-        </button>
+        {readOnly ? null : (
+          <button
+            onClick={() => {
+              setEditingActivity(null);
+              setModalMode("create");
+            }}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            + Agregar
+          </button>
+        )}
       </div>
 
       {error ? <p className="mt-2 text-sm text-rose-700 dark:text-rose-400">{error}</p> : null}
@@ -80,23 +82,25 @@ export function ActivitiesSection({ tripId }: { tripId: string }) {
                   {activity.hasExtraCost ? `Costo extra: $${activity.price}` : "Sin costo extra"}
                 </p>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditingActivity(activity);
-                    setModalMode("edit");
-                  }}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(activity)}
-                  className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-800 dark:text-rose-300 dark:hover:bg-rose-500/10"
-                >
-                  Eliminar
-                </button>
-              </div>
+              {readOnly ? null : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingActivity(activity);
+                      setModalMode("edit");
+                    }}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(activity)}
+                    className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-800 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              )}
             </div>
           ))
         )}

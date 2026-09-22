@@ -9,6 +9,7 @@ import { BusesSection } from "@/components/trips/BusesSection";
 import { RoomTypesSection } from "@/components/trips/RoomTypesSection";
 import { ActivitiesSection } from "@/components/trips/ActivitiesSection";
 import { ApiError } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 import { formatDate } from "@/lib/formats";
 import { getTrip, TripDetail, TripInput, TripStatus, updateTrip } from "@/lib/trips";
 
@@ -20,6 +21,10 @@ export default function TripDetailPage() {
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [error, setError] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
+  // Must start false (matching the server) and only flip inside an effect —
+  // reading localStorage synchronously during render would make the
+  // client's first paint diverge from the SSR HTML.
+  const [isGuide, setIsGuide] = useState(false);
 
   async function load() {
     setError("");
@@ -31,6 +36,7 @@ export default function TripDetailPage() {
   }
 
   useEffect(() => {
+    setIsGuide(getUser()?.role === "GUIDE");
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
@@ -72,25 +78,27 @@ export default function TripDetailPage() {
           </div>
           <p className="mt-1 text-slate-500 dark:text-slate-400">{trip.destination ?? "Sin destino especificado"}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={trip.status}
-            onChange={(e) => handleStatusChange(e.target.value as TripStatus)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:focus:border-teal-500"
-          >
-            {STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => setShowEditModal(true)}
-            className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400"
-          >
-            Editar
-          </button>
-        </div>
+        {isGuide ? null : (
+          <div className="flex items-center gap-3">
+            <select
+              value={trip.status}
+              onChange={(e) => handleStatusChange(e.target.value as TripStatus)}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:focus:border-teal-500"
+            >
+              {STATUS_OPTIONS.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400"
+            >
+              Editar
+            </button>
+          </div>
+        )}
       </div>
 
       {error ? (
@@ -144,13 +152,13 @@ export default function TripDetailPage() {
 
       <div className="mt-8 space-y-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <BusesSection tripId={trip.id} />
+          <BusesSection tripId={trip.id} readOnly={isGuide} />
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <RoomTypesSection tripId={trip.id} />
+          <RoomTypesSection tripId={trip.id} readOnly={isGuide} />
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <ActivitiesSection tripId={trip.id} />
+          <ActivitiesSection tripId={trip.id} readOnly={isGuide} />
         </div>
       </div>
 

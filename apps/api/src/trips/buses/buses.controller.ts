@@ -19,7 +19,7 @@ import { UpdateBusDto } from './dto/update-bus.dto';
 
 @Controller('trips/:tripId/buses')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('OWNER', 'ADMIN', 'AGENT')
+@Roles('OWNER', 'ADMIN', 'AGENT', 'GUIDE')
 export class BusesController {
   constructor(private readonly busesService: BusesService) {}
 
@@ -28,7 +28,10 @@ export class BusesController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('tripId') tripId: string,
   ) {
-    return this.busesService.findAllForTrip(user.tenantId, tripId);
+    return this.busesService.findAllForTrip(user.tenantId, tripId, {
+      id: user.userId,
+      role: user.role,
+    });
   }
 
   @Post()

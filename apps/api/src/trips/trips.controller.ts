@@ -20,21 +20,29 @@ import { TripsService } from './trips.service';
 
 @Controller('trips')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('OWNER', 'ADMIN', 'AGENT')
+@Roles('OWNER', 'ADMIN', 'AGENT', 'GUIDE')
 export class TripsController {
   constructor(private readonly tripsService: TripsService) {}
 
+  // A GUIDE only sees trips they're actually assigned to (via TripGuide) —
+  // everyone else sees the whole tenant's trips, unfiltered.
   @Get()
   findAll(
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: QueryTripsDto,
   ) {
-    return this.tripsService.findAll(user.tenantId, query);
+    return this.tripsService.findAll(user.tenantId, query, {
+      id: user.userId,
+      role: user.role,
+    });
   }
 
   @Get(':id')
   findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    return this.tripsService.findById(user.tenantId, id);
+    return this.tripsService.findById(user.tenantId, id, {
+      id: user.userId,
+      role: user.role,
+    });
   }
 
   @Post()

@@ -520,6 +520,49 @@ sí administra usuarios (puede agregarlos) pero **no** puede modificar el perfil
   base para la prueba y borrados al terminar): el nav muestra "Mi Agencia" para ADMIN/OWNER y
   "Mi Perfil" para GUIDE, y visitar `/agencia` por URL directa con un GUIDE termina en `/perfil`.
 
+**GUIDE limitado a Dashboard + sus viajes asignados (2026-09-22, mismo día):** el usuario explicó que
+un GUIDE puede no ser empleado fijo de la agencia — su acceso debe reducirse a ver el Dashboard y los
+viajes a los que está asignado (vía `TripGuide`), nada más; sin viajes asignados, solo un mensaje
+"No tienes viajes asignados." Diseño:
+- Backend (`TripsController`/`TripsService`): GUIDE se agregó al `@Roles` de clase (antes
+  `OWNER, ADMIN, AGENT`), pero solo para las rutas `GET` — `POST`/`PATCH` conservan su override
+  `@Roles('OWNER', 'ADMIN')`, así que GUIDE nunca pudo crear ni editar viajes. `findAll`/`findById`
+  ahora reciben un `requester?: {id, role}` opcional; cuando `role === 'GUIDE'` se agrega
+  `guides: { some: { userId } }` al `where` de Prisma — así que un GUIDE que llama `GET /trips` o
+  `GET /trips/:id` de un viaje al que no está asignado recibe lista vacía / 404, igual que si no
+  existiera. Los tres controllers de sub-recursos de un viaje (`buses`, `room-types`, `activities`)
+  recibieron el mismo tratamiento: GUIDE se agregó a sus `@Roles` de clase (antes sin acceso alguno,
+  ni siquiera de lectura) y su `assertTripBelongsToTenant` interno ahora acepta el mismo `requester`
+  opcional — sin esto, un GUIDE podría pedir `GET /trips/<cualquier-id>/buses` por URL directa y ver
+  choferes/placas de un viaje ajeno, aunque la vista del viaje en sí ya estuviera bloqueada.
+- Frontend: `(app)/layout.tsx` gana `GUIDE_ALLOWED_PATHS = ["/dashboard", "/viajes", "/perfil"]` y
+  un guard en el `useEffect` (ahora con `pathname` en las deps) que hace `router.replace("/dashboard")`
+  si un GUIDE navega fuera de esas rutas — el nav en sí también le oculta Clientes/Proveedores/
+  Cotizaciones/Reservas/Mi Agencia, mostrando solo Dashboard/Viajes/Mi Perfil.
+- `/dashboard` y `/viajes` detectan `isGuide` (vía `getUser()` dentro de un efecto, nunca en el
+  render síncrono — mismo patrón de hidratación ya usado en el resto de la app) y: ocultan
+  "+ Nuevo viaje"/"+ Agregar", y cuando la lista de viajes (ya filtrada por el backend) viene vacía
+  muestran "No tienes viajes asignados." en vez del mensaje genérico. Como `listTrips()` es la misma
+  llamada sin parámetros en ambas páginas, el filtrado del backend basta — no hizo falta un endpoint
+  ni una prop nueva para "viajes asignados".
+- `/viajes/[id]/page.tsx` oculta el selector de estado y el botón "Editar" para GUIDE, y pasa
+  `readOnly={isGuide}` a `BusesSection`/`RoomTypesSection`/`ActivitiesSection` (las tres ganaron una
+  prop `readOnly` que oculta sus botones "+ Agregar"/"Editar"/"Eliminar") — así un GUIDE ve el
+  detalle completo del viaje (incluyendo buses, habitaciones, actividades) pero sin ninguna
+  superficie de mutación que de todas formas el backend le rechazaría.
+- **Incidente durante la verificación:** al revisar con Playwright el detalle de un viaje asignado,
+  una primera pasada con espera fija (`waitForTimeout`) mostró la sección "Actividades opcionales"
+  atascada en "Cargando..." sin la petición de red correspondiente en el log — parecía un bug. Se
+  confirmó por curl que el endpoint (`GET /trips/:id/activities`) respondía bien para ese GUIDE, y
+  una segunda pasada con `page.waitForLoadState("networkidle")` mostró la sección cargando
+  correctamente — fue un artefacto de timing del dev server (HMR) en la prueba, no un bug real.
+- Verificado con un usuario GUIDE de prueba (creado en la base, asignado a un viaje vía `TripGuide`
+  y luego desasignado al terminar): sin viajes asignados ve "No tienes viajes asignados." en
+  Dashboard y en Viajes; con un viaje asignado lo ve en ambas vistas y accede a su detalle completo
+  sin controles de edición; un viaje NO asignado da 404 incluso por URL directa; y navegar a
+  `/clientes`, `/proveedores`, `/cotizaciones`, `/reservas` o `/agencia` redirige a `/dashboard` (o
+  `/perfil` en el caso de `/agencia`).
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
@@ -548,6 +591,10 @@ sí administra usuarios (puede agregarlos) pero **no** puede modificar el perfil
     usuarios (alta, edición) pero no `representativeName`/`address`/`contacts`/`notes`. La página
     `/agencia` (perfil de la agencia + gestión de usuarios) es exclusiva de OWNER/ADMIN; AGENT/GUIDE
     son redirigidos a `/perfil` (su propia vista, sin datos de la agencia ni de otros usuarios).
+15. Un GUIDE solo ve Dashboard, sus propios viajes asignados (vía `TripGuide`) y su perfil — nunca
+    Clientes/Proveedores/Cotizaciones/Reservas/Mi Agencia, ni viajes a los que no está asignado, ni
+    los datos de un viaje ajeno a través de sus sub-recursos (buses/room-types/activities). Un GUIDE
+    nunca puede crear ni editar un viaje ni sus sub-recursos — solo lectura de lo que le corresponde.
 
 ### 7.4 Orden recomendado de implementación
 
