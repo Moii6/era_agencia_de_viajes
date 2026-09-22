@@ -62,8 +62,8 @@ const LABELS: Record<string, string> = {
   PENDING: "Pendiente",
   OWNER: "Owner",
   ADMIN: "Admin",
-  AGENT: "Agente",
-  GUIDE: "Guía",
+  AGENT: "Agent",
+  GUIDE: "Guide",
 };
 
 export function Badge({ value }: { value: string }) {

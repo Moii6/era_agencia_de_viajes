@@ -8,7 +8,7 @@ import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/formats";
 import { AgencyUser, approveUser, getMe, rejectUser, updateUser, UserInput, UserUpdateInput } from "@/lib/users";
 
-const ROLE_LABELS: Record<string, string> = { OWNER: "Owner", ADMIN: "Admin", AGENT: "Agente", GUIDE: "Guía" };
+const ROLE_LABELS: Record<string, string> = { OWNER: "Owner", ADMIN: "Admin", AGENT: "Agent", GUIDE: "Guide" };
 
 function describePendingChange(user: AgencyUser) {
   if (user.status === "PENDING") return null;

@@ -7,8 +7,8 @@ import { AgencyUser, UserInput, UserRole, UserUpdateInput } from "@/lib/users";
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "OWNER", label: "Owner" },
   { value: "ADMIN", label: "Admin" },
-  { value: "AGENT", label: "Agente" },
-  { value: "GUIDE", label: "Guía" },
+  { value: "AGENT", label: "Agent" },
+  { value: "GUIDE", label: "Guide" },
 ];
 
 const inputClass =

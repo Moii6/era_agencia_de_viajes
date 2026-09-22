@@ -19,7 +19,7 @@ import {
   UserUpdateInput,
 } from "@/lib/users";
 
-const ROLE_LABELS: Record<string, string> = { OWNER: "Owner", ADMIN: "Admin", AGENT: "Agente", GUIDE: "Guía" };
+const ROLE_LABELS: Record<string, string> = { OWNER: "Owner", ADMIN: "Admin", AGENT: "Agent", GUIDE: "Guide" };
 
 function describePendingChange(user: AgencyUser) {
   if (user.status === "PENDING") return null;
