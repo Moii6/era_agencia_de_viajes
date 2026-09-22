@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { TenantForm } from "@/components/forms/TenantForm";
 import { MyProfileCard } from "@/components/tenant/MyProfileCard";
@@ -10,6 +11,7 @@ import { getUser, SessionUser } from "@/lib/auth";
 import { getTenant, Tenant, TenantInput, updateTenant } from "@/lib/tenant";
 
 export default function AgenciaPage() {
+  const router = useRouter();
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
   const [error, setError] = useState("");
@@ -25,9 +27,16 @@ export default function AgenciaPage() {
   }
 
   useEffect(() => {
-    setUser(getUser());
+    const stored = getUser();
+    setUser(stored);
+    // Mi Agencia (tenant profile + user management) is OWNER/ADMIN territory —
+    // an AGENT/GUIDE gets redirected to their own profile view instead.
+    if (stored && stored.role !== "OWNER" && stored.role !== "ADMIN") {
+      router.replace("/perfil");
+      return;
+    }
     load();
-  }, []);
+  }, [router]);
 
   async function handleEdit(input: TenantInput) {
     await updateTenant(input);
@@ -35,7 +44,16 @@ export default function AgenciaPage() {
     await load();
   }
 
-  const canEdit = user?.role === "OWNER" || user?.role === "ADMIN";
+  const canManageUsers = user?.role === "OWNER" || user?.role === "ADMIN";
+  // Only OWNER can edit the agency's own profile — ADMIN can manage users
+  // but not representativeName/address/contacts/notes.
+  const canEditTenant = user?.role === "OWNER";
+
+  if (!user || !canManageUsers) {
+    // Either the session is still loading, or an AGENT/GUIDE is mid-redirect —
+    // render nothing so they never see a flash of agency data.
+    return <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>;
+  }
 
   if (error && !tenant) {
     return (
@@ -56,7 +74,7 @@ export default function AgenciaPage() {
           <p className="text-sm uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400">Configuración</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{tenant.name}</h1>
         </div>
-        {canEdit ? (
+        {canEditTenant ? (
           <button
             onClick={() => setShowEditModal(true)}
             className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400"
@@ -72,11 +90,9 @@ export default function AgenciaPage() {
         </div>
       ) : null}
 
-      {user ? (
-        <div className="mt-6">
-          <MyProfileCard currentUserRole={user.role} />
-        </div>
-      ) : null}
+      <div className="mt-6">
+        <MyProfileCard currentUserRole={user.role} />
+      </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
@@ -128,13 +144,11 @@ export default function AgenciaPage() {
         </div>
       ) : null}
 
-      {canEdit && user ? (
-        <div className="mt-8">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-            <UsersSection currentUserId={user.id} currentUserRole={user.role} />
-          </div>
+      <div className="mt-8">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <UsersSection currentUserId={user.id} currentUserRole={user.role} />
         </div>
-      ) : null}
+      </div>
 
       {showEditModal ? (
         <Modal title="Editar agencia" onClose={() => setShowEditModal(false)}>

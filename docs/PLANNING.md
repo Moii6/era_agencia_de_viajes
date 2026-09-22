@@ -481,13 +481,44 @@ los demás — administrar y verse a uno mismo en el mismo lugar no tenía senti
   backend les rechazaría la edición de todas formas.
 - Sin cambios de backend — `GET /users/me` y `PATCH /users/:id` ya existían con las reglas correctas;
   esto fue puramente relocalizar UI que ya existía a un lugar más claro.
-- Ubicación: la tarjeta "Mi perfil" se agregó a la página `/agencia`, arriba de la cuadrícula de
-  datos de la agencia, sin la condición `canEdit` que sí sigue aplicando a `UsersSection` — un AGENT
-  o GUIDE ya podía entrar a `/agencia` (ve los datos de la agencia) pero antes no veía nada sobre sí
-  mismo ahí; ahora sí.
+- Ubicación (en ese momento): la tarjeta "Mi perfil" se agregó a la página `/agencia`, visible para
+  cualquier rol que pudiera entrar ahí. **Nota:** esto cambió en la entrada siguiente — `/agencia`
+  pasó a ser exclusiva de OWNER/ADMIN, así que un AGENT/GUIDE ya no la visita en absoluto (ver abajo).
 - Verificado con Playwright: el email propio del OWNER aparece una sola vez en la página (en "Mi
   perfil", no repetido en "Usuarios"), los demás usuarios (incluido el otro OWNER) sí aparecen en
   "Usuarios" con sus controles normales, y "Mi perfil" muestra el botón "Editar" para el OWNER.
+
+**Restringir "Mi Agencia" a OWNER/ADMIN y separar "Mi Perfil" (2026-09-22, mismo día):** el usuario
+reportó que un usuario con rol AGENT podía entrar a `/agencia` y ver los datos de la agencia —
+"eso está mal, la vista agencia está restringida para usuarios owner, un agent debería ver en su
+lugar una vista de 'mi perfil'". Al preguntar por el alcance de ADMIN, aclaró el modelo real: ADMIN
+sí administra usuarios (puede agregarlos) pero **no** puede modificar el perfil de la agencia
+(representante, dirección, contactos, notas) — eso es exclusivo de OWNER. Diseño:
+- Backend: `PATCH /tenants/me` pasó de `@Roles('OWNER', 'ADMIN')` a `@Roles('OWNER')` en
+  `TenantController` — ahora un ADMIN recibe 403 al intentar editar el perfil de la agencia.
+  `GET /tenants/me` no cambió (sigue abierto a los 4 roles). `PATCH /users/:id` tampoco cambió — un
+  ADMIN sigue pudiendo crear/editar usuarios, solo no el perfil del tenant.
+- Frontend (`/agencia/page.tsx`): `canEdit` se dividió en dos —`canManageUsers` (OWNER/ADMIN, controla
+  si la página se puede visitar en absoluto y si se ve `UsersSection`) y `canEditTenant` (solo OWNER,
+  controla el botón "Editar" del perfil de la agencia). Un AGENT/GUIDE que llega a `/agencia` por URL
+  directa es redirigido con `router.replace("/perfil")` en el primer `useEffect`, antes de pedir
+  ningún dato de la agencia — no es solo ocultar UI, es un guard real de la página.
+- Nueva ruta `/perfil` (`app/(app)/perfil/page.tsx`): renderiza únicamente `MyProfileCard` — el
+  mismo componente que ya vivía en `/agencia`, ahora también standalone. Accesible para cualquier rol
+  (no se bloquea a OWNER/ADMIN si la visitan a propósito, aunque su nav los manda a `/agencia`).
+- Nav (`(app)/layout.tsx`): el ítem de "Mi Agencia"/"Mi Perfil" ahora es dinámico según el rol —
+  `canManageUsers ? {href: "/agencia", label: "Mi Agencia"} : {href: "/perfil", label: "Mi Perfil"}` —
+  en vez de una lista estática de rutas.
+- **Incidente durante la verificación:** al probar por curl que un ADMIN recibe 403 en
+  `PATCH /tenants/me`, se hizo la prueba equivalente con el OWNER real para confirmar que sí puede
+  editar, pero el payload de prueba (`{"notes": "Notas de verificación"}`) se envió sin leer antes el
+  valor real de `notes` — lo sobrescribió. El usuario no recordaba el valor original, así que se dejó
+  en `null` a petición suya. Lección ya aplicada: cualquier verificación con curl que escriba sobre
+  el tenant/usuario real primero debe leer el estado actual del campo que va a tocar.
+- Verificado por curl (ADMIN → 403 en `PATCH /tenants/me`, OWNER → 200, ADMIN conserva 200 en
+  `GET /users`) y con Playwright usando usuarios ADMIN/GUIDE/OWNER temporales (creados directo en la
+  base para la prueba y borrados al terminar): el nav muestra "Mi Agencia" para ADMIN/OWNER y
+  "Mi Perfil" para GUIDE, y visitar `/agencia` por URL directa con un GUIDE termina en `/perfil`.
 
 ### 7.3 Reglas de negocio no negociables (backend)
 
@@ -513,6 +544,10 @@ los demás — administrar y verse a uno mismo en el mismo lugar no tenía senti
 13. El registro público (`POST /tenants/:slug/register`) siempre crea el usuario en `PENDING` con
     rol `AGENT` fijo, sin la excepción de bootstrap de la regla 11 — nunca se auto-activa, ni con
     0-1 OWNER en el tenant.
+14. Solo `OWNER` puede editar el perfil de la agencia (`PATCH /tenants/me`) — `ADMIN` administra
+    usuarios (alta, edición) pero no `representativeName`/`address`/`contacts`/`notes`. La página
+    `/agencia` (perfil de la agencia + gestión de usuarios) es exclusiva de OWNER/ADMIN; AGENT/GUIDE
+    son redirigidos a `/perfil` (su propia vista, sin datos de la agencia ni de otros usuarios).
 
 ### 7.4 Orden recomendado de implementación
 

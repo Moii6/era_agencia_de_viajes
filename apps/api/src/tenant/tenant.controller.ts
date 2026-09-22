@@ -18,8 +18,10 @@ export class TenantController {
     return this.tenantService.findById(user.tenantId);
   }
 
+  // ADMIN can manage users but not the agency's own profile — only OWNER
+  // can edit representativeName/address/contacts/notes.
   @Patch('me')
-  @Roles('OWNER', 'ADMIN')
+  @Roles('OWNER')
   async updateCurrentTenant(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateTenantDto,

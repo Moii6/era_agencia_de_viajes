@@ -5,14 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { clearSession, getUser, SessionUser } from "@/lib/auth";
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/clientes", label: "Clientes" },
   { href: "/proveedores", label: "Proveedores" },
   { href: "/viajes", label: "Viajes" },
   { href: "/cotizaciones", label: "Cotizaciones" },
   { href: "/reservas", label: "Reservas" },
-  { href: "/agencia", label: "Mi Agencia" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -42,6 +41,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen bg-slate-50 dark:bg-slate-950" />;
   }
 
+  // Mi Agencia (tenant profile + user management) is OWNER/ADMIN territory;
+  // everyone else gets their own profile view instead.
+  const canManageUsers = user.role === "OWNER" || user.role === "ADMIN";
+  const navItems = [
+    ...BASE_NAV_ITEMS,
+    canManageUsers ? { href: "/agencia", label: "Mi Agencia" } : { href: "/perfil", label: "Mi Perfil" },
+  ];
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
@@ -51,7 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
             return (
               <Link
