@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/Badge";
 import { clearSession, getUser, SessionUser } from "@/lib/auth";
 
 const BASE_NAV_ITEMS = [
@@ -94,7 +95,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="mt-6 border-t border-slate-200 pt-4 dark:border-slate-800">
           <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{user.name}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{user.role}</p>
+          <div className="mt-1">
+            <Badge value={user.role} />
+          </div>
           <button
             onClick={logout}
             className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"

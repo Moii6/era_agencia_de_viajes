@@ -5,10 +5,10 @@ import { ApiError } from "@/lib/api";
 import { AgencyUser, UserInput, UserRole, UserUpdateInput } from "@/lib/users";
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: "OWNER", label: "Owner" },
-  { value: "ADMIN", label: "Admin" },
-  { value: "AGENT", label: "Agent" },
-  { value: "GUIDE", label: "Guide" },
+  { value: "OWNER", label: "Propietario" },
+  { value: "ADMIN", label: "Administrador" },
+  { value: "AGENT", label: "Agente" },
+  { value: "GUIDE", label: "Guía" },
 ];
 
 const inputClass =

@@ -60,10 +60,10 @@ const LABELS: Record<string, string> = {
   CLOSED: "Cerrado",
   ACTIVE: "Activo",
   PENDING: "Pendiente",
-  OWNER: "Owner",
-  ADMIN: "Admin",
-  AGENT: "Agent",
-  GUIDE: "Guide",
+  OWNER: "Propietario",
+  ADMIN: "Administrador",
+  AGENT: "Agente",
+  GUIDE: "Guía",
 };
 
 export function Badge({ value }: { value: string }) {
