@@ -7,6 +7,7 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { RegisterUserDto } from './dto/register-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 // The agency can have at most 2 OWNER accounts.
@@ -89,6 +90,40 @@ export class UsersService {
     });
 
     return user;
+  }
+
+  // Public self-registration (no authenticated requester) — always PENDING
+  // regardless of how many OWNERs the tenant has, unlike an internal alta.
+  // The bootstrap exception in approvalIsRequired exists so a founding
+  // OWNER isn't stuck approving their own internal hires; it was never meant
+  // to let an anonymous public signup auto-activate just because the agency
+  // only has one OWNER so far.
+  async registerPublic(slug: string, dto: RegisterUserDto) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
+    if (!tenant) {
+      throw new NotFoundException('Agencia no encontrada');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase() },
+    });
+    if (existingUser) {
+      throw new ConflictException('El email ya está registrado');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    return this.prisma.user.create({
+      data: {
+        tenantId: tenant.id,
+        email: dto.email.toLowerCase(),
+        name: dto.name.trim(),
+        passwordHash,
+        role: 'AGENT',
+        status: 'PENDING',
+      },
+      select: SELECT_FIELDS,
+    });
   }
 
   async update(
@@ -261,12 +296,15 @@ export class UsersService {
       !!target.pendingEmail ||
       !!target.pendingRole;
 
-    if (!target.requestedByUserId || !hasPendingChange) {
+    if (!hasPendingChange) {
       throw new BadRequestException(
         'Este usuario no tiene nada pendiente de aprobación',
       );
     }
-    if (target.requestedByUserId === approverId) {
+    // requestedByUserId is null for a public self-registration (nobody
+    // authenticated requested it), so there's no self-approval risk to
+    // guard against in that case — any OWNER can review it.
+    if (target.requestedByUserId && target.requestedByUserId === approverId) {
       throw new BadRequestException(
         'No puedes aprobar o rechazar tu propia solicitud — necesitas al otro OWNER',
       );

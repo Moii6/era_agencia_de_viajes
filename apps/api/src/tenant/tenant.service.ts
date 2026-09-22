@@ -6,6 +6,19 @@ import { UpdateTenantDto } from './dto/update-tenant.dto';
 export class TenantService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Public — no auth. Only the minimal fields a signup page needs to greet
+  // the visitor; never the full profile (address, contacts, stats, etc).
+  async findBySlugPublic(slug: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+      select: { id: true, name: true, slug: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException('Agencia no encontrada');
+    }
+    return tenant;
+  }
+
   async update(tenantId: string, dto: UpdateTenantDto) {
     await this.findRaw(tenantId);
 

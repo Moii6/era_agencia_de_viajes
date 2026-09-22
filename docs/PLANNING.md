@@ -165,6 +165,13 @@ reservations/  ✅ se crea desde una Quote ACCEPTED, transiciones de estado cont
 ```
 app/
   page.tsx           ✅ login (vive en /, fuera del grupo protegido)
+  registro/[slug]/   ✅ registro público (sin sesión) para unirse a una
+                     agencia por su slug — GET /tenants/:slug/public (solo
+                     name/slug, nada sensible) para saludar, POST
+                     /tenants/:slug/register crea el usuario en PENDING con
+                     rol AGENT fijo (no seleccionable). El OWNER comparte
+                     este link con la persona que quiere sumar; no hay forma
+                     de "descubrir" agencias navegando la app
   (app)/             ✅ route group protegido: layout.tsx hace el guard de
                      sesión + sidebar de navegación una sola vez
     dashboard/       ✅ tarjeta de "Viaje en curso" (rango departureDate–
@@ -230,6 +237,7 @@ components/
 lib/         ✅ api.ts (fetch autenticado + manejo de 401), auth.ts (sesión
              en localStorage, incluye el rol usado para gating de UI),
              clients.ts, providers.ts, trips.ts, quotes.ts, tenant.ts, users.ts,
+             registration.ts (getPublicTenant/registerForTenant, sin auth),
              reservations.ts (tipos + llamadas por recurso, incluye
              QUOTE_TRANSITIONS y RESERVATION_TRANSITIONS espejo de los mapas
              del backend para la UI), formats.ts (formatDate compartido,
@@ -384,6 +392,38 @@ Verificado por curl (auto-desactivación bloqueada, login falla tras desactivar 
 tras reactivar, doble-desactivación bloqueada) y en navegador: fila propia sin botón "Desactivar",
 el resto sí lo tiene, y el badge cambia a "Inactivo" con botón "Reactivar" en su lugar.
 
+**Registro público de usuarios (2026-09-22):** el usuario aclaró que el alta desde "Mi Agencia" no
+era lo que pedía — quería que la propia persona nueva se registre (sin sesión) y quede esperando
+aprobación, no que el OWNER la dé de alta por ella. Eso obligó a resolver una pregunta que no
+existía en la app: ¿cómo sabe el formulario público a qué tenant se está uniendo? Se confirmó con
+el usuario: por el `slug` del tenant en la URL (`Tenant.slug` ya existía en el modelo pero no se
+usaba en ningún lado hasta ahora). Diseño:
+- `GET /tenants/:slug/public` y `POST /tenants/:slug/register` viven en un controller nuevo y
+  deliberadamente **sin guards** (`PublicRegistrationController`) — es el único rincón de la API
+  pensado para alguien sin sesión. El GET solo expone `{id, name, slug}`, nunca el perfil completo
+  (dirección, contactos, stats) que si tiene `GET /tenants/me`.
+- El rol de un registro público siempre es `AGENT`, fijo en el backend — el formulario ni lo pide.
+  Nadie puede auto-asignarse OWNER/ADMIN/GUIDE por esta vía.
+- **Siempre queda `PENDING`, sin excepción de bootstrap** — a diferencia del alta interna (que se
+  auto-aprueba si el tenant tiene 0-1 OWNER activo), un registro público jamás se activa solo,
+  incluso con un solo OWNER, porque cualquiera en internet podría pegarle al endpoint. `requestedByUserId`
+  queda `null` (no hay quién lo pidió, es anónimo).
+- Esto rompía el chequeo de aprobación existente: `assertHasPendingRequest` exigía
+  `requestedByUserId` truthy antes de mirar si había algo pendiente — un registro público con
+  `requestedByUserId: null` nunca hubiera podido aprobarse. Se corrigió para que la condición de
+  "hay algo pendiente" dependa solo de `status === 'PENDING'` o los campos `pending*`, y el chequeo
+  de auto-aprobación (`requestedByUserId === approverId`) solo aplique cuando `requestedByUserId`
+  sí existe — cualquier OWNER puede aprobar un registro público, no hace falta que sea "el otro".
+- Frontend: `app/registro/[slug]/page.tsx`, fuera del route group `(app)` (como el login, sin
+  sidebar). Mismo lenguaje visual que el login (panel teal + tarjeta blanca). Confirma contraseña
+  en el cliente (el backend no lo exige). Tras enviar, no intenta iniciar sesión — muestra un mensaje
+  claro de "pendiente de aprobación" en vez de dejar que el login falle de forma confusa.
+- Verificado por curl (tenant inexistente → 404, email duplicado → 409, aprobar sin
+  `requestedByUserId` → funciona, login antes de aprobar → 401, rechazar borra la fila) y en
+  Playwright: formulario completo, contraseñas no coinciden, envío exitoso, intento de login
+  inmediato sigue fallando (correcto, sigue pendiente), y el registro aparece en "Mi Agencia" con
+  "solicitada por —" y los botones Aprobar/Rechazar visibles para cualquier OWNER.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
@@ -401,6 +441,9 @@ el resto sí lo tiene, y el badge cambia a "Inactivo" con botón "Reactivar" en 
     la apruebe — nunca el mismo que la solicitó. Con 0-1 OWNER activo no aplica (bootstrap).
 12. Desactivar/reactivar un usuario es inmediato, sin aprobación — un OWNER no puede desactivarse a
     sí mismo.
+13. El registro público (`POST /tenants/:slug/register`) siempre crea el usuario en `PENDING` con
+    rol `AGENT` fijo, sin la excepción de bootstrap de la regla 11 — nunca se auto-activa, ni con
+    0-1 OWNER en el tenant.
 
 ### 7.4 Orden recomendado de implementación
 
