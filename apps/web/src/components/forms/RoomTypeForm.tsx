@@ -18,8 +18,6 @@ export function RoomTypeForm({ roomType, onSubmit, onCancel }: RoomTypeFormProps
   const [name, setName] = useState(roomType?.name ?? "");
   const [characteristics, setCharacteristics] = useState(roomType?.characteristics ?? "");
   const [maxOccupancy, setMaxOccupancy] = useState(roomType?.maxOccupancy?.toString() ?? "");
-  const [pricePerAdult, setPricePerAdult] = useState(roomType?.pricePerAdult ?? "");
-  const [pricePerMinor, setPricePerMinor] = useState(roomType?.pricePerMinor ?? "");
   const [quantityAvailable, setQuantityAvailable] = useState(roomType?.quantityAvailable?.toString() ?? "");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -34,8 +32,6 @@ export function RoomTypeForm({ roomType, onSubmit, onCancel }: RoomTypeFormProps
         name,
         characteristics: characteristics || undefined,
         maxOccupancy: Number(maxOccupancy),
-        pricePerAdult: Number(pricePerAdult),
-        pricePerMinor: Number(pricePerMinor),
         quantityAvailable: quantityAvailable ? Number(quantityAvailable) : undefined,
       });
     } catch (err) {
@@ -87,39 +83,6 @@ export function RoomTypeForm({ roomType, onSubmit, onCancel }: RoomTypeFormProps
           className={inputClass}
           placeholder="2 camas queen, vista al mar"
         />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="pricePerAdult" className={labelClass}>
-            Precio por adulto/noche (MXN) *
-          </label>
-          <input
-            id="pricePerAdult"
-            type="number"
-            min={0}
-            step="0.01"
-            value={pricePerAdult}
-            onChange={(e) => setPricePerAdult(e.target.value)}
-            className={inputClass}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="pricePerMinor" className={labelClass}>
-            Precio por menor/noche (MXN) *
-          </label>
-          <input
-            id="pricePerMinor"
-            type="number"
-            min={0}
-            step="0.01"
-            value={pricePerMinor}
-            onChange={(e) => setPricePerMinor(e.target.value)}
-            className={inputClass}
-            required
-          />
-        </div>
       </div>
 
       <div>

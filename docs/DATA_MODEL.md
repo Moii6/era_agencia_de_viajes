@@ -56,15 +56,15 @@ Prisma/Postgres); los textos de UI y datos de negocio van en español.
 - Multi-tenancy: `tenantId` en toda tabla de negocio + RLS de Postgres.
 - IDs UUID v4. Dinero en `Decimal`, nunca float, siempre con `currency` (por ahora `"MXN"`).
 - `createdAt`/`updatedAt` en todo; `deletedAt` (soft delete) en catálogos referenciados desde histórico.
-- **Snapshot de precio en la Cotización:** `QuoteOccupancy` guarda el precio vigente al cotizar
-  (`unitPricePerNight`), así un cambio de precio posterior en `RoomType` no altera cotizaciones ya
-  emitidas. La Reserva no duplica esos montos — es una confirmación de la Cotización aceptada, así
-  que lee los montos de ahí (evita mantener dos copias de la misma información).
-- **Precio de habitación = tarifa plana por noche**, igual sin importar si la ocupan adultos o
-  menores (no hay precio distinto por tipo de viajero). El subtotal de una ocupación es
-  `unitPricePerNight × noches`, donde noches sale de `Trip.returnDate − Trip.departureDate`.
-  `adults`/`minors` en `QuoteOccupancy` solo sirven para validar contra `RoomType.maxOccupancy` y
-  para el conteo de viajeros en la Reserva — no afectan el precio.
+- **El precio de habitación se captura a mano, no se calcula:** la cotización/reserva de la
+  habitación se hace en la página oficial del hotel, no en Travify, así que `RoomType` no guarda
+  ningún precio — es solo un catálogo informativo (nombre, características, ocupación máxima).
+  `QuoteOccupancy.subtotal` es el precio que el hotel dio **por toda la estancia**, escrito
+  directamente por quien arma la cotización. `adults`/`minors` en `QuoteOccupancy` son puramente
+  informativos (le dicen al agente cuántas personas buscar en la página del hotel) y solo se validan
+  contra `RoomType.maxOccupancy` — no participan en ningún cálculo de precio. La Reserva no duplica
+  esos montos — es una confirmación de la Cotización aceptada, así que lee los montos de ahí (evita
+  mantener dos copias de la misma información).
 
 ## 3. Diagrama de entidades
 
@@ -81,7 +81,7 @@ Trip (Viaje — creado por la agencia, salida única con fecha fija, cupo (turis
  ├─ TripGuide[] (mínimo 2 guías + 1 líder; cada autobús debe tener ≥1 guía — sí bloqueante)
  ├─ Bus[] (uno o más autobuses, cada uno con su chofer registrado)
  ├─ SeatAssignment[] (asiento único por autobús, ocupado por un Traveler o un TripGuide)
- ├─ RoomType[] (tipos de habitación disponibles, con precio plano por noche)
+ ├─ RoomType[] (tipos de habitación disponibles — catálogo informativo, sin precio)
  ├─ Activity[] (itinerario opcional, con o sin costo extra)
  ├─ Quote[]
  └─ Checkpoint[] (fase 2 — hitos predefinidos del viaje completo: inicio, llegada, actividades, retorno, fin)
@@ -233,9 +233,7 @@ Los ocupantes de este autobús (viajeros y guías) se consultan vía `SeatAssign
 | name | string | Ej. "Doble", "Triple", "Individual" |
 | characteristics | text? | Camas, vista, amenidades… |
 | maxOccupancy | int | Total de personas que caben |
-| pricePerNight | decimal | Tarifa plana por noche, igual sin importar adulto/menor |
 | quantityAvailable | int? | Nullable = sin control de inventario en MVP |
-| currency | string | Default "MXN" |
 
 ### Activity (Itinerario opcional — específico de un Trip)
 | Campo | Tipo | Notas |
@@ -273,10 +271,9 @@ Los ocupantes de este autobús (viajeros y guías) se consultan vía `SeatAssign
 | quoteId | uuid FK → Quote | |
 | roomTypeId | uuid FK → RoomType | Debe pertenecer al mismo `tripId` que la Quote |
 | label | string? | Ej. "Familia Pérez", para distinguir grupos en la misma cotización |
-| adults | int | Solo para validar contra `maxOccupancy` y contar viajeros — no afecta el precio |
-| minors | int | Ídem |
-| unitPricePerNight | decimal | Snapshot de `RoomType.pricePerNight` al cotizar |
-| subtotal | decimal | `unitPricePerNight × noches` (noches = `trip.returnDate − trip.departureDate`) |
+| adults | int | Informativo — cuántos adultos buscar en la página del hotel; no afecta el precio |
+| minors | int | Ídem, para menores |
+| subtotal | decimal | Precio que el hotel dio por **toda la estancia**, capturado a mano al cotizar |
 
 ### QuoteOccupancyActivity *(actividades opcionales elegidas por ese grupo)*
 | Campo | Tipo | Notas |
@@ -646,15 +643,13 @@ model SeatAssignment {
 }
 
 model RoomType {
-  id                 String  @id @default(uuid())
-  tripId             String
-  trip               Trip    @relation(fields: [tripId], references: [id])
-  name               String
-  characteristics    String?
-  maxOccupancy       Int
-  pricePerNight      Decimal @db.Decimal(12, 2)
-  quantityAvailable  Int?
-  currency           String  @default("MXN")
+  id                String  @id @default(uuid())
+  tripId            String
+  trip              Trip    @relation(fields: [tripId], references: [id])
+  name              String
+  characteristics   String?
+  maxOccupancy      Int
+  quantityAvailable Int?
 
   occupancies QuoteOccupancy[]
 
@@ -706,16 +701,15 @@ model Quote {
 }
 
 model QuoteOccupancy {
-  id              String   @id @default(uuid())
-  quoteId         String
-  quote           Quote    @relation(fields: [quoteId], references: [id])
-  roomTypeId      String
-  roomType        RoomType @relation(fields: [roomTypeId], references: [id])
-  label           String?
-  adults             Int
-  minors             Int
-  unitPricePerNight  Decimal  @db.Decimal(12, 2)
-  subtotal           Decimal  @db.Decimal(12, 2)
+  id         String   @id @default(uuid())
+  quoteId    String
+  quote      Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  roomTypeId String
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id])
+  label      String?
+  adults     Int
+  minors     Int
+  subtotal   Decimal  @db.Decimal(12, 2)
 
   activities QuoteOccupancyActivity[]
   travelers  Traveler[]

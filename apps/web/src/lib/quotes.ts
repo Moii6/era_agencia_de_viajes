@@ -27,8 +27,6 @@ export type QuoteOccupancy = {
   label: string | null;
   adults: number;
   minors: number;
-  unitPricePerAdult: string;
-  unitPricePerMinor: string;
   subtotal: string;
   roomType?: { id: string; name: string };
   activities?: QuoteOccupancyActivity[];
@@ -76,6 +74,9 @@ export type OccupancyInput = {
   label?: string;
   adults: number;
   minors: number;
+  // Total the hotel quoted for this room for the whole stay — typed in
+  // directly, since the actual booking happens on the hotel's own site.
+  subtotal: number;
 };
 
 export type OccupancyUpdateInput = Partial<Omit<OccupancyInput, "roomTypeId">>;

@@ -28,10 +28,7 @@ export class RoomTypesService {
         name: dto.name.trim(),
         characteristics: dto.characteristics,
         maxOccupancy: dto.maxOccupancy,
-        pricePerAdult: dto.pricePerAdult,
-        pricePerMinor: dto.pricePerMinor,
         quantityAvailable: dto.quantityAvailable,
-        ...(dto.currency ? { currency: dto.currency } : {}),
       },
     });
   }

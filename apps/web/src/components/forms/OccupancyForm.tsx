@@ -21,6 +21,7 @@ export function OccupancyForm({ occupancy, roomTypes, onSubmit, onCancel }: Occu
   const [label, setLabel] = useState(occupancy?.label ?? "");
   const [adults, setAdults] = useState(occupancy?.adults?.toString() ?? "1");
   const [minors, setMinors] = useState(occupancy?.minors?.toString() ?? "0");
+  const [subtotal, setSubtotal] = useState(occupancy?.subtotal ?? "");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -35,6 +36,7 @@ export function OccupancyForm({ occupancy, roomTypes, onSubmit, onCancel }: Occu
           label: label || undefined,
           adults: Number(adults),
           minors: Number(minors),
+          subtotal: Number(subtotal),
         });
       } else {
         await onSubmit({
@@ -42,6 +44,7 @@ export function OccupancyForm({ occupancy, roomTypes, onSubmit, onCancel }: Occu
           label: label || undefined,
           adults: Number(adults),
           minors: Number(minors),
+          subtotal: Number(subtotal),
         });
       }
     } catch (err) {
@@ -73,7 +76,7 @@ export function OccupancyForm({ occupancy, roomTypes, onSubmit, onCancel }: Occu
             </option>
             {roomTypes.map((roomType) => (
               <option key={roomType.id} value={roomType.id}>
-                {roomType.name} (hasta {roomType.maxOccupancy}) — ${roomType.pricePerAdult}/adulto · ${roomType.pricePerMinor}/menor
+                {roomType.name} (hasta {roomType.maxOccupancy})
               </option>
             ))}
           </select>
@@ -121,6 +124,23 @@ export function OccupancyForm({ occupancy, roomTypes, onSubmit, onCancel }: Occu
             className={inputClass}
           />
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="subtotal" className={labelClass}>
+          Precio total de la habitación (según el hotel) *
+        </label>
+        <input
+          id="subtotal"
+          type="number"
+          min={0}
+          step="0.01"
+          value={subtotal}
+          onChange={(e) => setSubtotal(e.target.value)}
+          className={inputClass}
+          placeholder="Precio por toda la estancia, tal como lo cotizó el hotel"
+          required
+        />
       </div>
 
       {error ? (

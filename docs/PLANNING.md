@@ -679,6 +679,44 @@ ahora estaban vacías.
   intentar `DELETE /quotes/:id` con el fix aplicado — 200, y se confirmó que tanto la cotización como
   su ocupación desaparecieron de la base.
 
+**Precio de habitación: de por-persona a captura manual (2026-09-24, mismo día otra vez):** el
+usuario explicó el modelo real de negocio: la cotización y la reserva de la habitación se hacen en
+la página oficial del hotel, no en Travify — la app solo necesita reflejar el precio que el hotel dio
+para esa habitación. Cargar un precio por adulto/menor en `RoomType` (la entrada anterior, del mismo
+día) era trabajo que se desactualiza solo, porque el precio real del hotel varía por fecha/temporada/
+promoción y nunca vive en Travify. Lo que sí importa cotizar bien son `adults`/`minors`, porque son
+el dato que el agente necesita para buscar la opción correcta en la página del hotel. Confirmado con
+el usuario: el precio que se captura a mano es el **total de toda la estancia**, no por noche.
+- `RoomType` pierde `pricePerAdult`/`pricePerMinor`/`currency` por completo — vuelve a ser un
+  catálogo puramente informativo (nombre, características, ocupación máxima, disponibles).
+- `QuoteOccupancy` pierde `unitPricePerAdult`/`unitPricePerMinor`. `subtotal` deja de calcularse — el
+  agente lo captura directamente al crear la ocupación (`CreateOccupancyDto.subtotal`, requerido) y
+  puede corregirlo después (`UpdateOccupancyDto.subtotal`, opcional). `adults`/`minors` se quedan en
+  el modelo, pero ahora son **puramente informativos** — ya no participan en ningún cálculo de
+  precio, solo se siguen validando contra `RoomType.maxOccupancy` (sigue teniendo sentido saber si la
+  cantidad de personas cabe en el tipo de habitación) y contando viajeros en la Reserva.
+  `OccupanciesService` se simplifica bastante: ya no necesita las fechas del viaje ni calcular
+  noches, ese cálculo completo desapareció.
+- `update()` ahora deja `adults`/`minors` y `subtotal` totalmente desacoplados — cambiar el headcount
+  nunca toca el precio, y cambiar el precio (por ejemplo, para corregir un typo o reflejar un ajuste
+  del hotel) nunca toca el headcount. Antes de la entrada anterior del mismo día, `update()` no
+  llamaba a `recalculateTotals`; ahora sí, siempre, porque el precio puede cambiar vía `PATCH`.
+- Frontend: `RoomTypeForm` pierde los dos campos de precio; `RoomTypesSection` ya no muestra precio,
+  solo "Hasta N personas" y disponibles. `OccupancyForm` gana un campo nuevo, obligatorio: "Precio
+  total de la habitación (según el hotel) *" — y el `<select>` de tipo de habitación ya no muestra
+  precio en las opciones (no hay ninguno que mostrar).
+- Migración a mano contra Render (`20260924163141_manual_room_price`): solo `DROP COLUMN` en ambas
+  tablas — sin backfill, porque no hay un valor nuevo que inferir de los datos viejos (el precio por
+  persona simplemente deja de existir como concepto). `QuoteOccupancy.subtotal` no se toca — sigue
+  siendo el registro histórico de lo que se cobró, sin importar cómo se haya calculado antes.
+- Verificado por curl end-to-end: tipo de habitación creado sin ningún campo de precio; ocupación
+  creada con `subtotal: 3200` capturado a mano → cotización queda en subtotal $3200, comisión $160,
+  total $3360; editar la ocupación cambiando solo `adults`/`minors` deja el precio intacto en $3200;
+  editar solo `subtotal` a $3500 dejó `adults`/`minors` intactos y actualizó los totales de la
+  cotización a $3500/$175/$3675 — confirma que headcount y precio están completamente desacoplados.
+  También verificado en navegador: el formulario de tipo de habitación ya no tiene campos de precio,
+  y la tarjeta del tipo de habitación ya no muestra ningún precio.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

@@ -1,11 +1,4 @@
-import {
-  IsInt,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-  MinLength,
-} from 'class-validator';
+import { IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
 
 export class CreateRoomTypeDto {
   @IsString()
@@ -20,20 +13,8 @@ export class CreateRoomTypeDto {
   @Min(1)
   maxOccupancy: number;
 
-  @IsNumber()
-  @Min(0)
-  pricePerAdult: number;
-
-  @IsNumber()
-  @Min(0)
-  pricePerMinor: number;
-
   @IsOptional()
   @IsInt()
   @Min(0)
   quantityAvailable?: number;
-
-  @IsOptional()
-  @IsString()
-  currency?: string;
 }

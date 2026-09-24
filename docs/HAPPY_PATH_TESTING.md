@@ -55,10 +55,10 @@ Guardar → te lleva al detalle del viaje (`/viajes/<id>`).
 |---|---|
 | Nombre * | `Doble Happy Path` |
 | Ocupación máxima * | `2` |
-| Precio por adulto/noche (MXN) * | `1000` |
-| Precio por menor/noche (MXN) * | `500` |
 
-Guardar. Verifica que la tarjeta muestre `Hasta 2 personas · $1000/adulto · $500/menor · por noche`.
+`RoomType` no tiene precio — la cotización/reserva de la habitación se hace en la página del hotel,
+así que este catálogo es solo informativo. Guardar. Verifica que la tarjeta muestre "Hasta 2
+personas", sin ningún precio.
 
 ### 2.2 Agregar el autobús
 
@@ -98,14 +98,17 @@ El resto de los campos (transportista, placa, chofer) quedan vacíos — no hace
 
 | Campo | Valor |
 |---|---|
-| Tipo de habitación * | `Doble Happy Path (hasta 2) — $1000/adulto · $500/menor` |
+| Tipo de habitación * | `Doble Happy Path (hasta 2)` |
 | Etiqueta | `Habitación 1` |
 | Adultos * | `1` |
 | Menores | `1` |
+| Precio total de la habitación (según el hotel) * | `4500` |
 
-Guardar. Verifica el subtotal de la ocupación: **$4500** — `(1×$1000 + 1×$500) × 3 noches`. Esto
-prueba el modelo de precio por persona (no por cuarto): si en vez de 1 adulto+1 menor hubieras puesto
-2 adultos, el subtotal habría sido $6000, no $4500.
+`adults`/`minors` aquí son solo informativos — le dicen al agente cuántas personas buscar en la
+página del hotel; el precio que entra al cálculo es el que se escribe a mano, no algo derivado de
+adultos/menores. Guardar. Verifica el subtotal de la ocupación: **$4500**, exactamente el número que
+capturaste. Prueba también editar la ocupación cambiando solo Adultos/Menores (por ejemplo a 2
+adultos) y confirma que el subtotal **no cambia** — son campos independientes del precio.
 
 ### 3.2 Agregar la actividad a la ocupación
 
@@ -237,5 +240,5 @@ Después de asignar, cada tarjeta debe mostrar `Asiento: Autobús HP-1 · #1` (o
 
 Si algún paso no da el resultado esperado, es una regresión — compara contra las reglas de negocio
 documentadas en [docs/PLANNING.md §7.3](PLANNING.md) y en las entradas fechadas correspondientes
-(precio por persona: 2026-09-24; congelamiento de ocupaciones al salir de Borrador: histórico;
-auto-confirmación/auto-completado de reservas: 2026-09-24).
+(precio de habitación capturado a mano: 2026-09-24; congelamiento de ocupaciones al salir de
+Borrador: histórico; auto-confirmación/auto-completado de reservas: 2026-09-24).

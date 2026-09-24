@@ -80,13 +80,14 @@ Clientes.
 - Mientras está en Borrador se le agregan/editan/quitan ocupaciones (tipo de habitación + adultos y
   menores) y actividades opcionales por ocupación — cada cambio recalcula automáticamente subtotal,
   **comisión de la agencia (5% fijo)** y total. No hay que recalcular nada a mano.
-- **El precio de una habitación es por persona, no por cuarto**: cada tipo de habitación tiene un
-  precio por adulto/noche y un precio (normalmente menor) por menor/noche — así se refleja que en un
-  viaje all-inclusive el costo real es sobre todo comida/bebida, que escala con quién ocupa el
-  cuarto, no con la cama en sí. El subtotal de una ocupación es
-  `(adultos × precio adulto + menores × precio menor) × noches`. Cambiar el precio de un tipo de
-  habitación **no** afecta cotizaciones ya armadas con ese tipo — cada ocupación guarda una foto del
-  precio al momento de crearse.
+- **El precio de una habitación se captura a mano, no se calcula**: la cotización y la reserva de la
+  habitación se hacen en la página oficial del hotel, no en Travify, así que el tipo de habitación
+  (`RoomType`) no tiene ningún precio guardado — es solo un catálogo informativo (nombre,
+  características, ocupación máxima). Al armar una ocupación, quien cotiza escribe directamente el
+  precio que el hotel dio **por toda la estancia** (no por noche). `adults`/`minors` se siguen
+  pidiendo, pero ahora son puramente informativos: le dicen al agente cuántas personas buscar en la
+  página del hotel — no afectan el precio en absoluto. Sí se sigue validando que
+  `adultos + menores` no exceda la `maxOccupancy` del tipo de habitación elegido.
 - Transiciones de estado permitidas: Borrador → Enviada / Rechazada / Expirada; Enviada → Aceptada /
   Rechazada / Expirada. Aceptada, Rechazada y Expirada son finales — no hay marcha atrás. Cualquier
   otro salto de estado se rechaza.

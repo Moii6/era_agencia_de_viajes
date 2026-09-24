@@ -45,10 +45,7 @@ export type RoomType = {
   name: string;
   characteristics: string | null;
   maxOccupancy: number;
-  pricePerAdult: string;
-  pricePerMinor: string;
   quantityAvailable: number | null;
-  currency: string;
 };
 
 export type Activity = {
@@ -103,10 +100,7 @@ export type RoomTypeInput = {
   name: string;
   characteristics?: string;
   maxOccupancy: number;
-  pricePerAdult: number;
-  pricePerMinor: number;
   quantityAvailable?: number;
-  currency?: string;
 };
 
 export type ActivityInput = {

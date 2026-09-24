@@ -296,12 +296,7 @@ model RoomType {
   name              String
   characteristics   String?
   maxOccupancy      Int
-  // Priced per person, not per room: in an all-inclusive, the dominant cost
-  // is food/drinks, which scale with who's actually staying, not the bed.
-  pricePerAdult     Decimal @db.Decimal(12, 2)
-  pricePerMinor     Decimal @db.Decimal(12, 2)
   quantityAvailable Int?
-  currency          String  @default("MXN")
 
   occupancies QuoteOccupancy[]
 
@@ -353,23 +348,23 @@ model Quote {
 }
 
 model QuoteOccupancy {
-  id                String   @id @default(uuid())
-  quoteId           String
+  id         String   @id @default(uuid())
+  quoteId    String
   // Cascade: a Quote can only be deleted while DRAFT (QuotesService.remove),
   // and a DRAFT quote can never have a Reservation (those require ACCEPTED),
   // so deleting it always means discarding its occupancies too.
-  quote             Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  roomTypeId        String
-  roomType          RoomType @relation(fields: [roomTypeId], references: [id])
-  label             String?
-  adults            Int
-  minors            Int
-  // Snapshot of RoomType.pricePerAdult/pricePerMinor at the moment this
-  // occupancy was created — a later change to the room type's prices must
-  // never retroactively change what an existing quote shows.
-  unitPricePerAdult Decimal  @db.Decimal(12, 2)
-  unitPricePerMinor Decimal  @db.Decimal(12, 2)
-  subtotal          Decimal  @db.Decimal(12, 2)
+  quote      Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  roomTypeId String
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id])
+  label      String?
+  adults     Int
+  minors     Int
+  // The actual booking happens on the hotel's own site, at whatever price
+  // it quotes that day — not computed here. Whoever builds the quote types
+  // it in directly, as the total for the whole stay (not per night).
+  // adults/minors stay purely informational: what to search for on the
+  // hotel's site to find the matching option.
+  subtotal   Decimal  @db.Decimal(12, 2)
 
   activities QuoteOccupancyActivity[]
   travelers  Traveler[]
