@@ -652,10 +652,32 @@ que ya pasaba con la confirmación al registrar el anticipo inicial. Diseño:
   viaje) → pasa a `CONFIRMED`, saldo $17,400 → intento manual de `PATCH` a `COMPLETED` → 400 ("No se
   puede completar la reserva con saldo pendiente (17400)") → segundo depósito de exactamente $17,400
   → la reserva pasa sola a `COMPLETED` sin ningún `PATCH` de estado, saldo final $0.
-- **Pendiente, no corregido:** la reserva real que motivó este cambio (Acapulco Playwright / Moises
-  Gomez) se queda tal cual, `COMPLETED` con `$6450` de saldo — el nuevo guard no es retroactivo, solo
-  aplica a partir de ahora. Corregirla (registrar el depósito faltante, o revertir su estado) queda
-  pendiente de que el usuario decida qué hacer con ese dato de prueba específico.
+- **Corregido a petición del usuario:** la reserva real que motivó este cambio (Acapulco Playwright /
+  Moises Gomez) se revirtió a mano de `COMPLETED` a `CONFIRMED` (vía script puntual contra Render,
+  no hay transición de salida de `COMPLETED` en la API — es terminal a propósito) para que quedara
+  consistente con su saldo pendiente de `$6450`.
+
+**Borrar una cotización DRAFT con ocupaciones fallaba (2026-09-24):** el usuario reportó el error de
+Nest/Prisma completo al intentar borrar una cotización: `PostgresError 23001` — "violates RESTRICT
+setting of foreign key constraint QuoteOccupancy_quoteId_fkey". Causa: `QuotesService.remove()` solo
+valida que el estado sea `DRAFT` y llama directo a `prisma.quote.delete()`, pero la relación
+`QuoteOccupancy.quote` nunca tuvo `onDelete: Cascade` (quedó en el `RESTRICT` por default de Prisma
+desde la migración inicial) — así que borrar cualquier cotización DRAFT que ya tuviera al menos una
+ocupación agregada (el flujo normal, ya que las ocupaciones solo se agregan en DRAFT) siempre fallaba
+a nivel de base de datos. Nunca se había detectado porque las cotizaciones de prueba borradas hasta
+ahora estaban vacías.
+- Se agregó `onDelete: Cascade` a `QuoteOccupancy.quote` y, por la misma razón, a
+  `QuoteOccupancyActivity.quoteOccupancy` (una ocupación con actividades tenía el mismo problema un
+  nivel más abajo). Es seguro porque una cotización DRAFT nunca puede tener una `Reservation` (esas
+  requieren `ACCEPTED`), así que borrar una cotización DRAFT siempre implica descartar también sus
+  ocupaciones y actividades — nunca hay nada más "real" (viajeros, depósitos) colgando de ellas.
+- Migración a mano contra Render (`20260924062351_cascade_delete_quote_occupancies`): `DROP
+  CONSTRAINT` + `ADD CONSTRAINT ... ON DELETE CASCADE` en ambas FKs. Sin cambios de código en
+  `QuotesService.remove()` — el bug estaba a nivel de constraint de base de datos, no de lógica.
+- Verificado contra el caso real: se re-consultó la cotización exacta que dio el error en el reporte
+  del usuario (seguía en DRAFT con su ocupación intacta, nunca se había podido borrar) y se volvió a
+  intentar `DELETE /quotes/:id` con el fix aplicado — 200, y se confirmó que tanto la cotización como
+  su ocupación desaparecieron de la base.
 
 ### 7.3 Reglas de negocio no negociables (backend)
 

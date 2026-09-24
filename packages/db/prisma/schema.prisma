@@ -355,7 +355,10 @@ model Quote {
 model QuoteOccupancy {
   id                String   @id @default(uuid())
   quoteId           String
-  quote             Quote    @relation(fields: [quoteId], references: [id])
+  // Cascade: a Quote can only be deleted while DRAFT (QuotesService.remove),
+  // and a DRAFT quote can never have a Reservation (those require ACCEPTED),
+  // so deleting it always means discarding its occupancies too.
+  quote             Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   roomTypeId        String
   roomType          RoomType @relation(fields: [roomTypeId], references: [id])
   label             String?
@@ -377,7 +380,7 @@ model QuoteOccupancy {
 model QuoteOccupancyActivity {
   id               String         @id @default(uuid())
   quoteOccupancyId String
-  quoteOccupancy   QuoteOccupancy @relation(fields: [quoteOccupancyId], references: [id])
+  quoteOccupancy   QuoteOccupancy @relation(fields: [quoteOccupancyId], references: [id], onDelete: Cascade)
   activityId       String
   activity         Activity       @relation(fields: [activityId], references: [id])
   quantity         Int
