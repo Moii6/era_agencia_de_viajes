@@ -590,6 +590,43 @@ de privilegios que no debería depender solo de cuántos OWNERs activos hay. Dis
   cambio de rol nunca se auto-aplica solo por venir de un OWNER, sigue el mismo flujo de consenso
   que cualquier otra edición).
 
+**Precio de habitación otra vez por persona, no plano (2026-09-23/24):** surgió mientras se escribía
+el manual de AGENT — el usuario preguntó para qué sirve el campo "ocupación" al agregar un viajero, y
+al investigar una reserva real (Acapulco Playwright / Moises Gomez) encontró que solo dejaba asignar
+1 viajero a una habitación "Doble" (capacidad 2) porque la ocupación de esa cotización se había
+armado con `adults: 1, minors: 0` — el máximo de la habitación no es lo mismo que lo cotizado para
+esa ocupación. Comparando con una página real de hotel, el usuario notó que ahí cotizar 2 adultos vs.
+1 adulto + 1 menor en la misma habitación da precios distintos (el menor sale más barato) — algo que
+`pricePerNight` (tarifa plana, ver entrada del 2026-09-20 más arriba) no podía representar en
+absoluto. La razón de negocio, confirmada en conversación: en un all-inclusive el costo dominante es
+comida/bebida ilimitada, que escala por persona, no por cama — de ahí que un adulto y un menor no
+cuesten lo mismo. Esto **revierte** el cambio a tarifa plana del 2026-09-20, pero ahora con una
+justificación de negocio explícita en vez de ser solo una simplificación de capacidad.
+- `RoomType.pricePerNight` → `pricePerAdult` + `pricePerMinor` (ambos `Decimal`, por noche, por
+  persona). `QuoteOccupancy.unitPricePerNight` → `unitPricePerAdult` + `unitPricePerMinor` — sigue
+  siendo un *snapshot* al momento de crear la ocupación (regla de negocio #3), nunca se recalcula
+  contra el precio actual del tipo de habitación.
+- Fórmula: `subtotal = (adults × unitPricePerAdult + minors × unitPricePerMinor) × noches`. Antes
+  `adults`/`minors` en `QuoteOccupancy` solo servían para validar contra `maxOccupancy` y contar
+  viajeros; ahora también determinan el precio.
+- `OccupanciesService.update()` antes no tocaba `subtotal` (el precio nunca cambiaba con el
+  headcount) ni llamaba a `recalculateTotals` — ahora sí hace ambas cosas cuando cambian
+  `adults`/`minors`, usando los precios *ya snapshotteados* de la ocupación (nunca vuelve a leer el
+  precio actual del `RoomType`) más las noches del viaje.
+- Migración a mano contra Render (`20260924053428_room_price_per_person`): agrega las columnas
+  nuevas, las rellena con el valor de la columna plana anterior (`pricePerAdult = pricePerMinor =
+  pricePerNight` antiguo) para que nada quede en `NULL`, y borra las columnas viejas. **A propósito
+  no se recalculó el `subtotal` de ocupaciones ya existentes** — son un registro histórico de lo que
+  realmente se cobró bajo la fórmula plana anterior; recalcularlas habría sido reescribir historia
+  financiera con una composición adulto/menor que en su momento no importaba para el precio.
+- Verificado por curl end-to-end: tipo de habitación a $1000/adulto y $500/menor, viaje de 3 noches
+  → ocupación de 2 adultos = $6000 (subtotal), comisión $300, total $6300; la misma habitación con 1
+  adulto + 1 menor = $4500/$225/$4725 (más barato, como en el ejemplo real de hotel que dio el
+  usuario); editar esa segunda ocupación a 2 adultos la deja en $6000/$300/$6300, igual que la
+  primera — confirma que `update()` recalcula correctamente. También verificado que el backfill dejó
+  `pricePerAdult = pricePerMinor` en un tipo de habitación preexistente y que el `subtotal` de una
+  ocupación histórica no se tocó.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

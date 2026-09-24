@@ -45,7 +45,8 @@ export type RoomType = {
   name: string;
   characteristics: string | null;
   maxOccupancy: number;
-  pricePerNight: string;
+  pricePerAdult: string;
+  pricePerMinor: string;
   quantityAvailable: number | null;
   currency: string;
 };
@@ -102,7 +103,8 @@ export type RoomTypeInput = {
   name: string;
   characteristics?: string;
   maxOccupancy: number;
-  pricePerNight: number;
+  pricePerAdult: number;
+  pricePerMinor: number;
   quantityAvailable?: number;
   currency?: string;
 };

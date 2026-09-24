@@ -27,7 +27,8 @@ export type QuoteOccupancy = {
   label: string | null;
   adults: number;
   minors: number;
-  unitPricePerNight: string;
+  unitPricePerAdult: string;
+  unitPricePerMinor: string;
   subtotal: string;
   roomType?: { id: string; name: string };
   activities?: QuoteOccupancyActivity[];

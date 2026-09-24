@@ -56,10 +56,12 @@ export class OccupanciesService {
     });
     const nights = this.nightsBetween(trip.departureDate, trip.returnDate);
 
-    const unitPricePerNight = Number(roomType.pricePerNight);
-    // Room cost is per night, flat — the same whether adults or minors
-    // occupy it — so it never depends on the adults/minors headcount.
-    const subtotal = unitPricePerNight * nights;
+    // Snapshot the room type's per-person prices at creation time — a later
+    // price change on the room type must not retroactively change this quote.
+    const unitPricePerAdult = Number(roomType.pricePerAdult);
+    const unitPricePerMinor = Number(roomType.pricePerMinor);
+    const subtotal =
+      (dto.adults * unitPricePerAdult + dto.minors * unitPricePerMinor) * nights;
 
     const occupancy = await this.prisma.quoteOccupancy.create({
       data: {
@@ -68,7 +70,8 @@ export class OccupanciesService {
         label: dto.label,
         adults: dto.adults,
         minors: dto.minors,
-        unitPricePerNight,
+        unitPricePerAdult,
+        unitPricePerMinor,
         subtotal,
       },
     });
@@ -83,7 +86,7 @@ export class OccupanciesService {
     occupancyId: string,
     dto: UpdateOccupancyDto,
   ) {
-    await this.quotesService.assertEditable(tenantId, quoteId);
+    const quote = await this.quotesService.assertEditable(tenantId, quoteId);
     const occupancy = await this.findOne(quoteId, occupancyId);
 
     const adults = dto.adults ?? occupancy.adults;
@@ -104,12 +107,26 @@ export class OccupanciesService {
       );
     }
 
-    // adults/minors only affect capacity/headcount tracking here — the
-    // room's subtotal is a flat per-night rate and doesn't change with them.
-    return this.prisma.quoteOccupancy.update({
-      where: { id: occupancyId },
-      data: { label: dto.label, adults, minors },
+    // Price is per person now, so changing the headcount changes the
+    // subtotal — recompute it from the *snapshotted* unit prices (never
+    // re-fetch the room type's current prices here) and the trip's nights.
+    const trip = await this.prisma.trip.findUniqueOrThrow({
+      where: { id: quote.tripId },
+      select: { departureDate: true, returnDate: true },
     });
+    const nights = this.nightsBetween(trip.departureDate, trip.returnDate);
+    const subtotal =
+      (adults * Number(occupancy.unitPricePerAdult) +
+        minors * Number(occupancy.unitPricePerMinor)) *
+      nights;
+
+    const updated = await this.prisma.quoteOccupancy.update({
+      where: { id: occupancyId },
+      data: { label: dto.label, adults, minors, subtotal },
+    });
+
+    await this.quotesService.recalculateTotals(quoteId);
+    return updated;
   }
 
   async remove(tenantId: string, quoteId: string, occupancyId: string) {

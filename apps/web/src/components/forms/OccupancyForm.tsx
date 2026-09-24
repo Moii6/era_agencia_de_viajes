@@ -73,7 +73,7 @@ export function OccupancyForm({ occupancy, roomTypes, onSubmit, onCancel }: Occu
             </option>
             {roomTypes.map((roomType) => (
               <option key={roomType.id} value={roomType.id}>
-                {roomType.name} (hasta {roomType.maxOccupancy}) — ${roomType.pricePerNight}/noche
+                {roomType.name} (hasta {roomType.maxOccupancy}) — ${roomType.pricePerAdult}/adulto · ${roomType.pricePerMinor}/menor
               </option>
             ))}
           </select>

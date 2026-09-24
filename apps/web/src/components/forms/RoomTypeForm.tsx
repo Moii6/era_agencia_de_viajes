@@ -18,7 +18,8 @@ export function RoomTypeForm({ roomType, onSubmit, onCancel }: RoomTypeFormProps
   const [name, setName] = useState(roomType?.name ?? "");
   const [characteristics, setCharacteristics] = useState(roomType?.characteristics ?? "");
   const [maxOccupancy, setMaxOccupancy] = useState(roomType?.maxOccupancy?.toString() ?? "");
-  const [pricePerNight, setPricePerNight] = useState(roomType?.pricePerNight ?? "");
+  const [pricePerAdult, setPricePerAdult] = useState(roomType?.pricePerAdult ?? "");
+  const [pricePerMinor, setPricePerMinor] = useState(roomType?.pricePerMinor ?? "");
   const [quantityAvailable, setQuantityAvailable] = useState(roomType?.quantityAvailable?.toString() ?? "");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +34,8 @@ export function RoomTypeForm({ roomType, onSubmit, onCancel }: RoomTypeFormProps
         name,
         characteristics: characteristics || undefined,
         maxOccupancy: Number(maxOccupancy),
-        pricePerNight: Number(pricePerNight),
+        pricePerAdult: Number(pricePerAdult),
+        pricePerMinor: Number(pricePerMinor),
         quantityAvailable: quantityAvailable ? Number(quantityAvailable) : undefined,
       });
     } catch (err) {
@@ -89,33 +91,49 @@ export function RoomTypeForm({ roomType, onSubmit, onCancel }: RoomTypeFormProps
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="pricePerNight" className={labelClass}>
-            Precio por noche (MXN) *
+          <label htmlFor="pricePerAdult" className={labelClass}>
+            Precio por adulto/noche (MXN) *
           </label>
           <input
-            id="pricePerNight"
+            id="pricePerAdult"
             type="number"
             min={0}
             step="0.01"
-            value={pricePerNight}
-            onChange={(e) => setPricePerNight(e.target.value)}
+            value={pricePerAdult}
+            onChange={(e) => setPricePerAdult(e.target.value)}
             className={inputClass}
             required
           />
         </div>
         <div>
-          <label htmlFor="quantityAvailable" className={labelClass}>
-            Habitaciones disp.
+          <label htmlFor="pricePerMinor" className={labelClass}>
+            Precio por menor/noche (MXN) *
           </label>
           <input
-            id="quantityAvailable"
+            id="pricePerMinor"
             type="number"
             min={0}
-            value={quantityAvailable}
-            onChange={(e) => setQuantityAvailable(e.target.value)}
+            step="0.01"
+            value={pricePerMinor}
+            onChange={(e) => setPricePerMinor(e.target.value)}
             className={inputClass}
+            required
           />
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="quantityAvailable" className={labelClass}>
+          Habitaciones disp.
+        </label>
+        <input
+          id="quantityAvailable"
+          type="number"
+          min={0}
+          value={quantityAvailable}
+          onChange={(e) => setQuantityAvailable(e.target.value)}
+          className={inputClass}
+        />
       </div>
 
       {error ? (

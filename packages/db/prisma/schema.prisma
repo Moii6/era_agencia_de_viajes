@@ -296,7 +296,10 @@ model RoomType {
   name              String
   characteristics   String?
   maxOccupancy      Int
-  pricePerNight     Decimal @db.Decimal(12, 2)
+  // Priced per person, not per room: in an all-inclusive, the dominant cost
+  // is food/drinks, which scale with who's actually staying, not the bed.
+  pricePerAdult     Decimal @db.Decimal(12, 2)
+  pricePerMinor     Decimal @db.Decimal(12, 2)
   quantityAvailable Int?
   currency          String  @default("MXN")
 
@@ -358,7 +361,11 @@ model QuoteOccupancy {
   label             String?
   adults            Int
   minors            Int
-  unitPricePerNight Decimal  @db.Decimal(12, 2)
+  // Snapshot of RoomType.pricePerAdult/pricePerMinor at the moment this
+  // occupancy was created — a later change to the room type's prices must
+  // never retroactively change what an existing quote shows.
+  unitPricePerAdult Decimal  @db.Decimal(12, 2)
+  unitPricePerMinor Decimal  @db.Decimal(12, 2)
   subtotal          Decimal  @db.Decimal(12, 2)
 
   activities QuoteOccupancyActivity[]
