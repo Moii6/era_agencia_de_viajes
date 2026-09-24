@@ -24,9 +24,9 @@ bórralos si no los quieres dejar.
 | Nombre * | `Ana Test` |
 | Email | `ana.test@example.com` |
 | Teléfono | `5555550001` |
-| Etapa | `Lead` (default) |
+| Etapa | `Interesado` (default) |
 
-Guardar. Verifica que aparece en la tabla con etapa "Lead".
+Guardar. Verifica que aparece en la tabla con etapa "Interesado".
 
 ## 2. Crear el viaje
 
@@ -226,7 +226,7 @@ Después de asignar, cada tarjeta debe mostrar `Asiento: Autobús HP-1 · #1` (o
 
 ## Resultado esperado (checklist final)
 
-- [ ] Cliente "Ana Test" existe, etapa Lead.
+- [ ] Cliente "Ana Test" existe, etapa Interesado.
 - [ ] Viaje "Cancún Happy Path" con 1 tipo de habitación, 1 autobús, 1 actividad.
 - [ ] Cotización: Borrador → Enviada → Aceptada, total $5040 (habitación $4500 + actividad $300,
       comisión $240).

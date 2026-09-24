@@ -40,7 +40,7 @@ const STATUS_TONE: Record<string, Tone> = {
 };
 
 const LABELS: Record<string, string> = {
-  LEAD: "Lead",
+  LEAD: "Interesado",
   PROSPECT: "Prospecto",
   CUSTOMER: "Cliente",
   INACTIVE: "Inactivo",

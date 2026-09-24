@@ -65,7 +65,7 @@ acceso a ninguno de estos cuatro módulos — ver [guide.md](guide.md).
 
 ### Clientes
 
-CRUD completo (crear, ver, editar, eliminar). Un cliente tiene una etapa (`stage`): Lead → Prospecto
+CRUD completo (crear, ver, editar, eliminar). Un cliente tiene una etapa (`stage`): Interesado → Prospecto
 → Cliente, o Inactivo. El borrado es lógico (el registro no desaparece de la base, solo se marca y
 deja de listarse).
 

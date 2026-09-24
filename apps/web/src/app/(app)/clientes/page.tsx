@@ -9,7 +9,7 @@ import { Client, ClientInput, ClientStage, createClient, deleteClient, listClien
 
 const STAGE_FILTERS: { value: ClientStage | "ALL"; label: string }[] = [
   { value: "ALL", label: "Todos" },
-  { value: "LEAD", label: "Lead" },
+  { value: "LEAD", label: "Interesado" },
   { value: "PROSPECT", label: "Prospecto" },
   { value: "CUSTOMER", label: "Cliente" },
   { value: "INACTIVE", label: "Inactivo" },

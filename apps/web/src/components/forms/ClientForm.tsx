@@ -5,7 +5,7 @@ import { ApiError } from "@/lib/api";
 import { Client, ClientInput, ClientStage } from "@/lib/clients";
 
 const STAGE_OPTIONS: { value: ClientStage; label: string }[] = [
-  { value: "LEAD", label: "Lead" },
+  { value: "LEAD", label: "Interesado" },
   { value: "PROSPECT", label: "Prospecto" },
   { value: "CUSTOMER", label: "Cliente" },
   { value: "INACTIVE", label: "Inactivo" },
