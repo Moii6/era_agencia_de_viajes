@@ -627,6 +627,36 @@ justificación de negocio explícita en vez de ser solo una simplificación de c
   `pricePerAdult = pricePerMinor` en un tipo de habitación preexistente y que el `subtotal` de una
   ocupación histórica no se tocó.
 
+**Completar una reserva requiere saldo $0, y se dispara solo (2026-09-24):** el usuario notó una
+reserva real (Acapulco Playwright / Moises Gomez) en estado `COMPLETED` con `total: $9450` pero solo
+`$3000` en depósitos — saldo pendiente de `$6450`. Repasando el modelo de estados se confirmó la
+causa: `PATCH /reservations/:id` solo validaba la transición de estado (`CONFIRMED → COMPLETED`
+permitida), nunca el saldo — cualquiera con permiso para editar reservas podía "completar" una con
+deuda pendiente. El usuario pidió el fix: completar debe requerir saldo $0, y debe pasar solo, igual
+que ya pasaba con la confirmación al registrar el anticipo inicial. Diseño:
+- `ReservationsService.update()`: al intentar `dto.status === 'COMPLETED'`, calcula el saldo
+  (`quote.total − suma de depósitos`) y lanza 400 si es mayor a 0 — cubre tanto un intento manual por
+  la UI como uno directo por API.
+- `confirmIfPendingDeposit` (que antes solo reaccionaba al anticipo inicial) se renombró a
+  `syncStatusAfterDeposit` y ahora se llama **después de cualquier depósito**, no solo el inicial:
+  primero aplica la regla que ya existía (anticipo inicial + `PENDING_DEPOSIT` → `CONFIRMED`), y
+  luego, si la reserva quedó (o ya estaba) `CONFIRMED` y el saldo es ≤ 0 (cubre sobrepago), la pasa a
+  `COMPLETED` — sin que nadie tenga que acordarse de cambiar el estado a mano. Un solo depósito que
+  sea a la vez el inicial y cubra el total completo hace `PENDING_DEPOSIT → CONFIRMED → COMPLETED`
+  en la misma llamada.
+- Frontend (`/reservas/[id]`): el selector "Cambiar estado" ya no ofrece "COMPLETED" como opción
+  mientras `balance > 0` — ofrecerlo solo para que el backend lo rechace es mala UX; una vez que el
+  saldo llega a 0 solo por depósitos, de todas formas ya no hace falta el selector porque el cambio
+  ya ocurrió solo.
+- Verificado por curl end-to-end: reserva con total $18,900 → anticipo inicial de $1,500 (mínimo del
+  viaje) → pasa a `CONFIRMED`, saldo $17,400 → intento manual de `PATCH` a `COMPLETED` → 400 ("No se
+  puede completar la reserva con saldo pendiente (17400)") → segundo depósito de exactamente $17,400
+  → la reserva pasa sola a `COMPLETED` sin ningún `PATCH` de estado, saldo final $0.
+- **Pendiente, no corregido:** la reserva real que motivó este cambio (Acapulco Playwright / Moises
+  Gomez) se queda tal cual, `COMPLETED` con `$6450` de saldo — el nuevo guard no es retroactivo, solo
+  aplica a partir de ahora. Corregirla (registrar el depósito faltante, o revertir su estado) queda
+  pendiente de que el usuario decida qué hacer con ese dato de prueba específico.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
@@ -663,6 +693,10 @@ justificación de negocio explícita en vez de ser solo una simplificación de c
     exclusivo de OWNER — un ADMIN puede editar nombre/email de cualquier usuario (incluido el suyo)
     pero nunca su rol, ni el propio ni el de nadie más. Esto no aplica al alta (`POST /users`): ahí
     el ADMIN sigue eligiendo el rol inicial con el que crea a alguien.
+17. Una reserva solo puede pasar a `COMPLETED` cuando su saldo (`quote.total` menos la suma de sus
+    depósitos) es ≤ 0 — tanto por `PATCH` manual como por el paso automático que dispara cualquier
+    depósito nuevo. No hace falta que nadie cambie el estado a mano: en cuanto un depósito deja el
+    saldo en 0 (o negativo, en un sobrepago), la reserva se completa sola.
 
 ### 7.4 Orden recomendado de implementación
 

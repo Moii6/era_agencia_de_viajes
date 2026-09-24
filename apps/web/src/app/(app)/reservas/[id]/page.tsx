@@ -61,7 +61,12 @@ export default function ReservationDetailPage() {
     return <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>;
   }
 
-  const nextStatuses = RESERVATION_TRANSITIONS[reservation.status];
+  // COMPLETED is meant to happen on its own once a deposit clears the
+  // balance — offering it manually while something's still owed would just
+  // fail against the backend's own guard, so hide it until balance <= 0.
+  const nextStatuses = RESERVATION_TRANSITIONS[reservation.status].filter(
+    (status) => status !== "COMPLETED" || reservation.balance <= 0,
+  );
 
   const occupancyOptions: OccupancyOption[] = quote.occupancies.map((occupancy) => {
     const capacity = occupancy.adults + occupancy.minors;

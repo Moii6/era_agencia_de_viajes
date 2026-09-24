@@ -89,6 +89,19 @@ export class ReservationsService {
     return { ...reservation, depositsSum, balance };
   }
 
+  /** Recomputes { depositsSum, balance } without pulling in travelers/client/trip like findById does. */
+  private async computeBalance(reservationId: string) {
+    const reservation = await this.prisma.reservation.findUniqueOrThrow({
+      where: { id: reservationId },
+      include: { deposits: true, quote: { select: { total: true } } },
+    });
+    const depositsSum = reservation.deposits.reduce(
+      (sum, d) => sum + Number(d.amount),
+      0,
+    );
+    return { depositsSum, balance: Number(reservation.quote.total) - depositsSum };
+  }
+
   async create(tenantId: string, dto: CreateReservationDto) {
     const quote = await this.prisma.quote.findFirst({
       where: { id: dto.quoteId, tenantId },
@@ -127,22 +140,52 @@ export class ReservationsService {
       );
     }
 
+    // A reservation only completes once nothing is owed — this is normally
+    // reached automatically (see syncStatusAfterDeposit), but this guard
+    // also covers a manual PATCH straight to COMPLETED.
+    if (dto.status === 'COMPLETED') {
+      const { balance } = await this.computeBalance(id);
+      if (balance > 0) {
+        throw new BadRequestException(
+          `No se puede completar la reserva con saldo pendiente (${balance})`,
+        );
+      }
+    }
+
     return this.prisma.reservation.update({
       where: { id },
       data: { status: dto.status },
     });
   }
 
-  /** Called by DepositsService after registering an isInitialDeposit=true row. */
-  async confirmIfPendingDeposit(reservationId: string) {
-    const reservation = await this.prisma.reservation.findUniqueOrThrow({
+  /**
+   * Called by DepositsService after registering any deposit. An initial
+   * deposit moves PENDING_DEPOSIT → CONFIRMED (as before); then, regardless
+   * of which deposit just landed, a CONFIRMED reservation whose balance has
+   * reached zero (or gone negative, on overpayment) auto-completes — the
+   * agency shouldn't have to remember to flip the status by hand once
+   * everything's been paid.
+   */
+  async syncStatusAfterDeposit(reservationId: string, isInitialDeposit: boolean) {
+    let reservation = await this.prisma.reservation.findUniqueOrThrow({
       where: { id: reservationId },
     });
-    if (reservation.status === 'PENDING_DEPOSIT') {
-      await this.prisma.reservation.update({
+
+    if (isInitialDeposit && reservation.status === 'PENDING_DEPOSIT') {
+      reservation = await this.prisma.reservation.update({
         where: { id: reservationId },
         data: { status: 'CONFIRMED' },
       });
+    }
+
+    if (reservation.status === 'CONFIRMED') {
+      const { balance } = await this.computeBalance(reservationId);
+      if (balance <= 0) {
+        await this.prisma.reservation.update({
+          where: { id: reservationId },
+          data: { status: 'COMPLETED' },
+        });
+      }
     }
   }
 

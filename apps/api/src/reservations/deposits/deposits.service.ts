@@ -63,9 +63,12 @@ export class DepositsService {
       },
     });
 
-    if (dto.isInitialDeposit) {
-      await this.reservationsService.confirmIfPendingDeposit(reservationId);
-    }
+    // Any deposit — not just the initial one — can be the one that clears
+    // the balance and auto-completes the reservation.
+    await this.reservationsService.syncStatusAfterDeposit(
+      reservationId,
+      dto.isInitialDeposit ?? false,
+    );
 
     return deposit;
   }

@@ -103,6 +103,11 @@ Clientes.
   de anticipo también puede pasar directo a Cancelada.
 - **Confirmada no se alcanza manualmente** — no hay botón para eso. Se confirma automáticamente en
   cuanto se registra el anticipo inicial (ver Depósitos abajo).
+- **Completada tampoco se alcanza manualmente en la práctica** — solo se puede pasar a Completada
+  cuando el saldo (total de la cotización menos lo depositado) es $0 o menos; si se intenta con
+  saldo pendiente, se rechaza. Igual que Confirmada, normalmente ocurre sola: en cuanto un depósito
+  deja el saldo en $0, la reserva se completa automáticamente, sin que nadie tenga que cambiarle el
+  estado.
 - **Viajeros:** se agregan a una ocupación de la cotización, sin exceder su capacidad (adultos +
   menores). Solo un viajero puede ser el "titular" de la reserva, y el titular requiere teléfono.
   Cada viajero puede tener un asiento asignado en un autobús del viaje (un asiento no se puede
