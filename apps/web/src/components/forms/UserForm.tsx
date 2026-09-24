@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { AgencyUser, UserInput, UserRole, UserUpdateInput } from "@/lib/users";
 
@@ -27,6 +28,7 @@ type UserFormProps = {
 };
 
 export function UserForm({ user, canEditRole = true, onSubmit, onCancel }: UserFormProps) {
+  const toast = useToast();
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [password, setPassword] = useState("");
@@ -46,7 +48,9 @@ export function UserForm({ user, canEditRole = true, onSubmit, onCancel }: UserF
         await onSubmit({ name, email, password, role });
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el usuario");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar el usuario";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

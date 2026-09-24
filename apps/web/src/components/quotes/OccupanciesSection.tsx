@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { OccupancyForm } from "@/components/forms/OccupancyForm";
 import { ApiError } from "@/lib/api";
 import {
@@ -86,6 +88,8 @@ type OccupanciesSectionProps = {
 };
 
 export function OccupanciesSection({ quoteId, tripId, occupancies, editable, onChange }: OccupanciesSectionProps) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [error, setError] = useState("");
@@ -104,8 +108,10 @@ export function OccupanciesSection({ quoteId, tripId, occupancies, editable, onC
   async function handleSubmit(input: OccupancyInput | OccupancyUpdateInput) {
     if (modalMode === "edit" && editingOccupancy) {
       await updateOccupancy(quoteId, editingOccupancy.id, input as OccupancyUpdateInput);
+      toast.success("Ocupación actualizada");
     } else {
       await createOccupancy(quoteId, input as OccupancyInput);
+      toast.success("Ocupación agregada");
     }
     setModalMode(null);
     setEditingOccupancy(null);
@@ -113,30 +119,39 @@ export function OccupanciesSection({ quoteId, tripId, occupancies, editable, onC
   }
 
   async function handleDelete(occupancy: QuoteOccupancy) {
-    if (!confirm(`¿Eliminar la ocupación "${occupancy.label ?? occupancy.roomType?.name}"?`)) return;
+    if (!(await confirm(`¿Eliminar la ocupación "${occupancy.label ?? occupancy.roomType?.name}"?`, { confirmLabel: "Eliminar" }))) return;
     try {
       await deleteOccupancy(quoteId, occupancy.id);
+      toast.success("Ocupación eliminada");
       onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar la ocupación");
+      const message = err instanceof ApiError ? err.message : "No se pudo eliminar la ocupación";
+      setError(message);
+      toast.error(message);
     }
   }
 
   async function handleAddActivity(occupancyId: string, input: { activityId: string; quantity: number }) {
     try {
       await createOccupancyActivity(quoteId, occupancyId, input);
+      toast.success("Actividad agregada a la ocupación");
       onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo agregar la actividad");
+      const message = err instanceof ApiError ? err.message : "No se pudo agregar la actividad";
+      setError(message);
+      toast.error(message);
     }
   }
 
   async function handleRemoveActivity(occupancyId: string, lineId: string) {
     try {
       await deleteOccupancyActivity(quoteId, occupancyId, lineId);
+      toast.success("Actividad quitada de la ocupación");
       onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo quitar la actividad");
+      const message = err instanceof ApiError ? err.message : "No se pudo quitar la actividad";
+      setError(message);
+      toast.error(message);
     }
   }
 

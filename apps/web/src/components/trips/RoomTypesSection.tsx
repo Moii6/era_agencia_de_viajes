@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { RoomTypeForm } from "@/components/forms/RoomTypeForm";
 import { ApiError } from "@/lib/api";
 import { createRoomType, deleteRoomType, listRoomTypes, RoomType, RoomTypeInput, updateRoomType } from "@/lib/trips";
 
 export function RoomTypesSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [roomTypes, setRoomTypes] = useState<RoomType[] | null>(null);
   const [error, setError] = useState("");
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
@@ -28,8 +32,10 @@ export function RoomTypesSection({ tripId, readOnly = false }: { tripId: string;
   async function handleSubmit(input: RoomTypeInput) {
     if (modalMode === "edit" && editingRoomType) {
       await updateRoomType(tripId, editingRoomType.id, input);
+      toast.success("Tipo de habitación actualizado");
     } else {
       await createRoomType(tripId, input);
+      toast.success("Tipo de habitación agregado");
     }
     setModalMode(null);
     setEditingRoomType(null);
@@ -37,12 +43,15 @@ export function RoomTypesSection({ tripId, readOnly = false }: { tripId: string;
   }
 
   async function handleDelete(roomType: RoomType) {
-    if (!confirm(`¿Eliminar el tipo de habitación "${roomType.name}"?`)) return;
+    if (!(await confirm(`¿Eliminar el tipo de habitación "${roomType.name}"?`, { confirmLabel: "Eliminar" }))) return;
     try {
       await deleteRoomType(tripId, roomType.id);
+      toast.success("Tipo de habitación eliminado");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar el tipo de habitación");
+      const message = err instanceof ApiError ? err.message : "No se pudo eliminar el tipo de habitación";
+      setError(message);
+      toast.error(message);
     }
   }
 

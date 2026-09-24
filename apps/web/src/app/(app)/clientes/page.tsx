@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { ClientForm } from "@/components/forms/ClientForm";
 import { ApiError } from "@/lib/api";
 import { Client, ClientInput, ClientStage, createClient, deleteClient, listClients, updateClient } from "@/lib/clients";
@@ -16,6 +18,8 @@ const STAGE_FILTERS: { value: ClientStage | "ALL"; label: string }[] = [
 ];
 
 export default function ClientesPage() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [clients, setClients] = useState<Client[] | null>(null);
   const [stageFilter, setStageFilter] = useState<ClientStage | "ALL">("ALL");
   const [error, setError] = useState("");
@@ -55,20 +59,25 @@ export default function ClientesPage() {
   async function handleSubmit(input: ClientInput) {
     if (modalMode === "edit" && editingClient) {
       await updateClient(editingClient.id, input);
+      toast.success("Cliente actualizado");
     } else {
       await createClient(input);
+      toast.success("Cliente creado");
     }
     closeModal();
     await loadClients();
   }
 
   async function handleDelete(client: Client) {
-    if (!confirm(`¿Eliminar a "${client.name}"? Esto no borra su historial, solo lo desactiva.`)) return;
+    if (!(await confirm(`¿Eliminar a "${client.name}"? Esto no borra su historial, solo lo desactiva.`, { confirmLabel: "Eliminar" }))) return;
     try {
       await deleteClient(client.id);
+      toast.success("Cliente eliminado");
       await loadClients();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar el cliente");
+      const message = err instanceof ApiError ? err.message : "No se pudo eliminar el cliente";
+      setError(message);
+      toast.error(message);
     }
   }
 

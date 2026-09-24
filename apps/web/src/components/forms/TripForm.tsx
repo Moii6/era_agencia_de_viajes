@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { listProviders, Provider } from "@/lib/providers";
 import { Trip, TripInput } from "@/lib/trips";
@@ -21,6 +22,7 @@ type TripFormProps = {
 };
 
 export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
+  const toast = useToast();
   const [name, setName] = useState(trip?.name ?? "");
   const [destination, setDestination] = useState(trip?.destination ?? "");
   const [departureDate, setDepartureDate] = useState(toDateInput(trip?.departureDate));
@@ -71,7 +73,9 @@ export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
         notes: notes || undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el viaje");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar el viaje";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

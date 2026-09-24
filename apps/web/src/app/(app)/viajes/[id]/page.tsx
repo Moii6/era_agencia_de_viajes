@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import { TripForm } from "@/components/forms/TripForm";
 import { BusesSection } from "@/components/trips/BusesSection";
 import { RoomTypesSection } from "@/components/trips/RoomTypesSection";
@@ -18,6 +19,7 @@ const STATUS_OPTIONS: TripStatus[] = ["DRAFT", "PUBLISHED", "CLOSED", "COMPLETED
 export default function TripDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const toast = useToast();
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [error, setError] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -43,6 +45,7 @@ export default function TripDetailPage() {
 
   async function handleEdit(input: TripInput) {
     await updateTrip(params.id, input);
+    toast.success("Viaje actualizado");
     setShowEditModal(false);
     await load();
   }
@@ -50,9 +53,12 @@ export default function TripDetailPage() {
   async function handleStatusChange(status: TripStatus) {
     try {
       await updateTrip(params.id, { status });
+      toast.success("Estado del viaje actualizado");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo cambiar el estado");
+      const message = err instanceof ApiError ? err.message : "No se pudo cambiar el estado";
+      setError(message);
+      toast.error(message);
     }
   }
 

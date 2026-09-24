@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
+import { useToast } from "@/components/ui/Toast";
 import { OccupancyOption } from "@/components/forms/TravelerForm";
 import { TravelersSection } from "@/components/reservations/TravelersSection";
 import { DepositsSection } from "@/components/reservations/DepositsSection";
@@ -18,9 +19,17 @@ import {
 } from "@/lib/reservations";
 import { Bus, listBuses } from "@/lib/trips";
 
+const STATUS_TOAST_MESSAGES: Record<ReservationStatus, string> = {
+  PENDING_DEPOSIT: "Reserva actualizada",
+  CONFIRMED: "Reserva confirmada",
+  COMPLETED: "Reserva completada",
+  CANCELLED: "Reserva cancelada",
+};
+
 export default function ReservationDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const toast = useToast();
   const [reservation, setReservation] = useState<ReservationDetail | null>(null);
   const [quote, setQuote] = useState<QuoteDetail | null>(null);
   const [buses, setBuses] = useState<Bus[]>([]);
@@ -47,9 +56,12 @@ export default function ReservationDetailPage() {
   async function handleStatusChange(status: ReservationStatus) {
     try {
       await updateReservation(params.id, { status });
+      toast.success(STATUS_TOAST_MESSAGES[status]);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo cambiar el estado");
+      const message = err instanceof ApiError ? err.message : "No se pudo cambiar el estado";
+      setError(message);
+      toast.error(message);
     }
   }
 

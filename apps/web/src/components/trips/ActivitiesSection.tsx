@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { ActivityForm } from "@/components/forms/ActivityForm";
 import { ApiError } from "@/lib/api";
 import { Activity, ActivityInput, createActivity, deleteActivity, listActivities, updateActivity } from "@/lib/trips";
 
 export function ActivitiesSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [activities, setActivities] = useState<Activity[] | null>(null);
   const [error, setError] = useState("");
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
@@ -28,8 +32,10 @@ export function ActivitiesSection({ tripId, readOnly = false }: { tripId: string
   async function handleSubmit(input: ActivityInput) {
     if (modalMode === "edit" && editingActivity) {
       await updateActivity(tripId, editingActivity.id, input);
+      toast.success("Actividad actualizada");
     } else {
       await createActivity(tripId, input);
+      toast.success("Actividad agregada");
     }
     setModalMode(null);
     setEditingActivity(null);
@@ -37,12 +43,15 @@ export function ActivitiesSection({ tripId, readOnly = false }: { tripId: string
   }
 
   async function handleDelete(activity: Activity) {
-    if (!confirm(`¿Eliminar la actividad "${activity.name}"?`)) return;
+    if (!(await confirm(`¿Eliminar la actividad "${activity.name}"?`, { confirmLabel: "Eliminar" }))) return;
     try {
       await deleteActivity(tripId, activity.id);
+      toast.success("Actividad eliminada");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar la actividad");
+      const message = err instanceof ApiError ? err.message : "No se pudo eliminar la actividad";
+      setError(message);
+      toast.error(message);
     }
   }
 

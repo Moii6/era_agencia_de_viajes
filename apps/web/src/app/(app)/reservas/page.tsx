@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import { ReservationForm } from "@/components/forms/ReservationForm";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/formats";
@@ -19,6 +20,7 @@ const STATUS_FILTERS: { value: ReservationStatus | "ALL"; label: string }[] = [
 
 export default function ReservasPage() {
   const router = useRouter();
+  const toast = useToast();
   const [reservations, setReservations] = useState<Reservation[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | "ALL">("ALL");
   const [error, setError] = useState("");
@@ -41,6 +43,7 @@ export default function ReservasPage() {
 
   async function handleCreate(input: ReservationInput) {
     const reservation = await createReservation(input);
+    toast.success("Reserva creada");
     setShowCreateModal(false);
     router.push(`/reservas/${reservation.id}`);
   }

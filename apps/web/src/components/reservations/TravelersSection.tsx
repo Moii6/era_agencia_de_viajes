@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { OccupancyOption, TravelerForm } from "@/components/forms/TravelerForm";
 import { ApiError } from "@/lib/api";
 import {
@@ -83,6 +85,8 @@ type TravelersSectionProps = {
 };
 
 export function TravelersSection({ reservationId, travelers, occupancyOptions, buses, onChange }: TravelersSectionProps) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [error, setError] = useState("");
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
   const [editingTraveler, setEditingTraveler] = useState<Traveler | null>(null);
@@ -90,8 +94,10 @@ export function TravelersSection({ reservationId, travelers, occupancyOptions, b
   async function handleSubmit(input: TravelerInput | TravelerUpdateInput) {
     if (modalMode === "edit" && editingTraveler) {
       await updateTraveler(reservationId, editingTraveler.id, input as TravelerUpdateInput);
+      toast.success("Viajero actualizado");
     } else {
       await createTraveler(reservationId, input as TravelerInput);
+      toast.success("Viajero agregado");
     }
     setModalMode(null);
     setEditingTraveler(null);
@@ -99,30 +105,39 @@ export function TravelersSection({ reservationId, travelers, occupancyOptions, b
   }
 
   async function handleDelete(traveler: Traveler) {
-    if (!confirm(`¿Eliminar al viajero "${traveler.fullName}"?`)) return;
+    if (!(await confirm(`¿Eliminar al viajero "${traveler.fullName}"?`, { confirmLabel: "Eliminar" }))) return;
     try {
       await deleteTraveler(reservationId, traveler.id);
+      toast.success("Viajero eliminado");
       onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar el viajero");
+      const message = err instanceof ApiError ? err.message : "No se pudo eliminar el viajero";
+      setError(message);
+      toast.error(message);
     }
   }
 
   async function handleAssignSeat(travelerId: string, input: { busId: string; seatNumber: string }) {
     try {
       await assignSeat(reservationId, travelerId, input);
+      toast.success("Asiento asignado");
       onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo asignar el asiento");
+      const message = err instanceof ApiError ? err.message : "No se pudo asignar el asiento";
+      setError(message);
+      toast.error(message);
     }
   }
 
   async function handleUnassignSeat(travelerId: string) {
     try {
       await unassignSeat(reservationId, travelerId);
+      toast.success("Asiento liberado");
       onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo quitar el asiento");
+      const message = err instanceof ApiError ? err.message : "No se pudo quitar el asiento";
+      setError(message);
+      toast.error(message);
     }
   }
 

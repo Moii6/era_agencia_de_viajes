@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { ProviderForm } from "@/components/forms/ProviderForm";
 import { ApiError } from "@/lib/api";
 import {
@@ -23,6 +25,8 @@ const TYPE_FILTERS: { value: ProviderType | "ALL"; label: string }[] = [
 ];
 
 export default function ProveedoresPage() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [providers, setProviders] = useState<Provider[] | null>(null);
   const [typeFilter, setTypeFilter] = useState<ProviderType | "ALL">("ALL");
   const [error, setError] = useState("");
@@ -62,20 +66,25 @@ export default function ProveedoresPage() {
   async function handleSubmit(input: ProviderInput) {
     if (modalMode === "edit" && editingProvider) {
       await updateProvider(editingProvider.id, input);
+      toast.success("Proveedor actualizado");
     } else {
       await createProvider(input);
+      toast.success("Proveedor creado");
     }
     closeModal();
     await loadProviders();
   }
 
   async function handleDelete(provider: Provider) {
-    if (!confirm(`¿Eliminar a "${provider.name}"? Esto no borra su historial, solo lo desactiva.`)) return;
+    if (!(await confirm(`¿Eliminar a "${provider.name}"? Esto no borra su historial, solo lo desactiva.`, { confirmLabel: "Eliminar" }))) return;
     try {
       await deleteProvider(provider.id);
+      toast.success("Proveedor eliminado");
       await loadProviders();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar el proveedor");
+      const message = err instanceof ApiError ? err.message : "No se pudo eliminar el proveedor";
+      setError(message);
+      toast.error(message);
     }
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { Activity, ActivityInput } from "@/lib/trips";
 
@@ -15,6 +16,7 @@ type ActivityFormProps = {
 };
 
 export function ActivityForm({ activity, onSubmit, onCancel }: ActivityFormProps) {
+  const toast = useToast();
   const [name, setName] = useState(activity?.name ?? "");
   const [description, setDescription] = useState(activity?.description ?? "");
   const [hasExtraCost, setHasExtraCost] = useState(activity?.hasExtraCost ?? false);
@@ -35,7 +37,9 @@ export function ActivityForm({ activity, onSubmit, onCancel }: ActivityFormProps
         price: hasExtraCost && price ? Number(price) : undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar la actividad");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar la actividad";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

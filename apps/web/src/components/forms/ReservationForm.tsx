@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { listQuotes, Quote } from "@/lib/quotes";
 import { ReservationInput } from "@/lib/reservations";
@@ -15,6 +16,7 @@ type ReservationFormProps = {
 };
 
 export function ReservationForm({ onSubmit, onCancel }: ReservationFormProps) {
+  const toast = useToast();
   const [quoteId, setQuoteId] = useState("");
   const [quotes, setQuotes] = useState<Quote[] | null>(null);
   const [error, setError] = useState("");
@@ -34,7 +36,9 @@ export function ReservationForm({ onSubmit, onCancel }: ReservationFormProps) {
     try {
       await onSubmit({ quoteId });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo crear la reserva");
+      const message = err instanceof ApiError ? err.message : "No se pudo crear la reserva";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

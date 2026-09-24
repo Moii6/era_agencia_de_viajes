@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { listProviders, Provider } from "@/lib/providers";
 import { Bus, BusInput } from "@/lib/trips";
@@ -16,6 +17,7 @@ type BusFormProps = {
 };
 
 export function BusForm({ bus, onSubmit, onCancel }: BusFormProps) {
+  const toast = useToast();
   const [label, setLabel] = useState(bus?.label ?? "");
   const [providerId, setProviderId] = useState(bus?.providerId ?? "");
   const [seatCapacity, setSeatCapacity] = useState(bus?.seatCapacity?.toString() ?? "");
@@ -50,7 +52,9 @@ export function BusForm({ bus, onSubmit, onCancel }: BusFormProps) {
         notes: notes || undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el autobús");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar el autobús";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

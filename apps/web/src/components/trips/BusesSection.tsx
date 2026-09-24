@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { BusForm } from "@/components/forms/BusForm";
 import { ApiError } from "@/lib/api";
 import { Bus, BusInput, createBus, deleteBus, listBuses, updateBus } from "@/lib/trips";
 
 export function BusesSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [buses, setBuses] = useState<Bus[] | null>(null);
   const [error, setError] = useState("");
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
@@ -28,8 +32,10 @@ export function BusesSection({ tripId, readOnly = false }: { tripId: string; rea
   async function handleSubmit(input: BusInput) {
     if (modalMode === "edit" && editingBus) {
       await updateBus(tripId, editingBus.id, input);
+      toast.success("Autobús actualizado");
     } else {
       await createBus(tripId, input);
+      toast.success("Autobús agregado");
     }
     setModalMode(null);
     setEditingBus(null);
@@ -37,12 +43,15 @@ export function BusesSection({ tripId, readOnly = false }: { tripId: string; rea
   }
 
   async function handleDelete(bus: Bus) {
-    if (!confirm(`¿Eliminar el autobús "${bus.label}"?`)) return;
+    if (!(await confirm(`¿Eliminar el autobús "${bus.label}"?`, { confirmLabel: "Eliminar" }))) return;
     try {
       await deleteBus(tripId, bus.id);
+      toast.success("Autobús eliminado");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar el autobús");
+      const message = err instanceof ApiError ? err.message : "No se pudo eliminar el autobús";
+      setError(message);
+      toast.error(message);
     }
   }
 

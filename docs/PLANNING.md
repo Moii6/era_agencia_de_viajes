@@ -717,6 +717,53 @@ el usuario: el precio que se captura a mano es el **total de toda la estancia**,
   También verificado en navegador: el formulario de tipo de habitación ya no tiene campos de precio,
   y la tarjeta del tipo de habitación ya no muestra ningún precio.
 
+**Diálogo de confirmación propio + notificaciones toast en cada acción CRUD (2026-09-24):** el
+usuario pidió dos cosas relacionadas de UI: dejar de usar los diálogos nativos del navegador
+(`confirm()`) y agregar notificaciones tipo Teams — un aviso visual cada vez que se completa una
+acción CRUD (crear/editar/eliminar/aprobar/etc.), no push notifications reales del sistema
+operativo (se aclaró explícitamente: son avisos dentro de la app, disparados por las propias
+acciones del usuario, no notificaciones en segundo plano).
+- Dos piezas nuevas en `components/ui/`: `ConfirmDialog.tsx` (`ConfirmProvider` + `useConfirm()`,
+  un hook que devuelve `confirm(mensaje, opciones?): Promise<boolean>` — reemplaza el `confirm()`
+  bloqueante del navegador con un modal propio, con el mismo estilo visual que `Modal.tsx`; acepta
+  `confirmLabel`/`cancelLabel`/`tone` para que el botón de confirmar diga "Eliminar"/"Desactivar"/
+  "Rechazar" en vez de un genérico "Confirmar", y `tone: "danger"` por default ya que casi todos los
+  usos existentes son acciones destructivas) y `Toast.tsx` (`ToastProvider` + `useToast()`, con
+  `.success(mensaje)`/`.error(mensaje)` — pila de notificaciones en la esquina inferior derecha, se
+  auto-descartan a los 4s o se pueden cerrar a mano). Ambos montados una sola vez en
+  `app/layout.tsx` vía un wrapper `AppProviders` (`components/providers/AppProviders.tsx`), así que
+  `useConfirm()`/`useToast()` funcionan en cualquier componente sin volver a envolver nada.
+- **Se reemplazaron los 10 usos de `confirm()` del navegador** en toda la app (autobuses, tipos de
+  habitación, actividades, ocupaciones, viajeros, usuarios — rechazar/desactivar, mi perfil —
+  rechazar, clientes, proveedores, cotizaciones — eliminar) por `await confirm(...)`. Como
+  `useConfirm()` regresa una promesa en vez de bloquear el hilo como el `confirm()` nativo, cada
+  sitio pasó de `if (!confirm(...)) return;` a `if (!(await confirm(...))) return;` — cambio
+  mecánico, la lógica no cambió.
+- **Se agregó una notificación de éxito/error a cada acción CRUD** de la app: los 14 componentes de
+  formulario (`components/forms/*.tsx`) ganaron `toast.error(mensaje)` en su bloque `catch` (junto
+  al `setError()` que ya tenían — el toast es la notificación efímera, el banner inline sigue
+  siendo la explicación persistente del error) y los ~13 componentes de sección/página que hacen
+  create/update/delete/approve/reject/deactivate/reactivate ganaron `toast.success(mensaje)` después
+  de cada acción exitosa, con mensajes específicos ("Cliente creado", "Autobús eliminado", "Reserva
+  confirmada", "Solicitud rechazada", etc.) en vez de un genérico "Listo". Los cambios de estado
+  (cotización, reserva) usan un mapa `STATUS_TOAST_MESSAGES` para dar un mensaje distinto por
+  estado en vez de "Estado actualizado" genérico. En `UsersSection`/`MyProfileCard`, el toast de
+  crear/editar usuario revisa la respuesta del backend (`status`/`requestedByUserId`) para decir
+  "pendiente de aprobación" cuando corresponde, en vez de afirmar que el cambio ya se aplicó.
+- Verificado con Playwright, incluido un listener de eventos `dialog` del navegador (para confirmar
+  que el diálogo nativo *nunca* se dispara): crear un cliente → toast "Cliente creado"; clic en
+  "Eliminar" → aparece el modal propio (no el nativo) con botón "Eliminar" en vez de "Confirmar" y
+  "Cancelar"; clic en "Cancelar" → el cliente sigue en la lista; reintentar y confirmar → toast
+  "Cliente eliminado" y el cliente desaparece. También verificado en modo oscuro (emulando
+  `prefers-color-scheme: dark`): el toast se ve con fondo no transparente, con el tono correcto.
+- **Nota operativa durante la verificación:** el servidor de desarrollo de la API empezó a devolver
+  500 en todo (incluido login) a media prueba — no por los cambios de este turno (son puramente de
+  frontend), sino porque el proceso `nest start --watch` llevaba corriendo toda la sesión con un
+  cliente de Prisma en memoria que quedó desalineado tras varios `prisma generate` de turnos
+  anteriores sin que ningún archivo `.ts` del backend cambiara para forzar el reinicio del watcher.
+  Reiniciarlo (`pkill` + `pnpm dev:api`) lo resolvió. Lección: un `prisma generate` a medio día de
+  sesión larga puede dejar el backend corriendo con un cliente viejo aunque el build sí compile.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

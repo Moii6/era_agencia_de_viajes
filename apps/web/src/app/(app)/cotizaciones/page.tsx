@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import { QuoteForm } from "@/components/forms/QuoteForm";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/formats";
@@ -20,6 +21,7 @@ const STATUS_FILTERS: { value: QuoteStatus | "ALL"; label: string }[] = [
 
 export default function CotizacionesPage() {
   const router = useRouter();
+  const toast = useToast();
   const [quotes, setQuotes] = useState<Quote[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | "ALL">("ALL");
   const [error, setError] = useState("");
@@ -42,6 +44,7 @@ export default function CotizacionesPage() {
 
   async function handleCreate(input: QuoteInput) {
     const quote = await createQuote(input);
+    toast.success("Cotización creada");
     setShowCreateModal(false);
     router.push(`/cotizaciones/${quote.id}`);
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { RoomType, RoomTypeInput } from "@/lib/trips";
 
@@ -15,6 +16,7 @@ type RoomTypeFormProps = {
 };
 
 export function RoomTypeForm({ roomType, onSubmit, onCancel }: RoomTypeFormProps) {
+  const toast = useToast();
   const [name, setName] = useState(roomType?.name ?? "");
   const [characteristics, setCharacteristics] = useState(roomType?.characteristics ?? "");
   const [maxOccupancy, setMaxOccupancy] = useState(roomType?.maxOccupancy?.toString() ?? "");
@@ -35,7 +37,9 @@ export function RoomTypeForm({ roomType, onSubmit, onCancel }: RoomTypeFormProps
         quantityAvailable: quantityAvailable ? Number(quantityAvailable) : undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el tipo de habitación");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar el tipo de habitación";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

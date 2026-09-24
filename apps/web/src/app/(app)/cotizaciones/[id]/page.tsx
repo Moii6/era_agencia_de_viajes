@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { QuoteEditForm } from "@/components/forms/QuoteEditForm";
 import { OccupanciesSection } from "@/components/quotes/OccupanciesSection";
 import { ApiError } from "@/lib/api";
@@ -18,9 +20,19 @@ import {
   updateQuote,
 } from "@/lib/quotes";
 
+const STATUS_TOAST_MESSAGES: Record<QuoteStatus, string> = {
+  DRAFT: "Cotización actualizada",
+  SENT: "Cotización enviada",
+  ACCEPTED: "Cotización aceptada",
+  REJECTED: "Cotización rechazada",
+  EXPIRED: "Cotización marcada como expirada",
+};
+
 export default function QuoteDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [quote, setQuote] = useState<QuoteDetail | null>(null);
   const [error, setError] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -41,6 +53,7 @@ export default function QuoteDetailPage() {
 
   async function handleEdit(input: QuoteUpdateInput) {
     await updateQuote(params.id, input);
+    toast.success("Cotización actualizada");
     setShowEditModal(false);
     await load();
   }
@@ -48,20 +61,26 @@ export default function QuoteDetailPage() {
   async function handleStatusChange(status: QuoteStatus) {
     try {
       await updateQuote(params.id, { status });
+      toast.success(STATUS_TOAST_MESSAGES[status]);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo cambiar el estado");
+      const message = err instanceof ApiError ? err.message : "No se pudo cambiar el estado";
+      setError(message);
+      toast.error(message);
     }
   }
 
   async function handleDelete() {
     if (!quote) return;
-    if (!confirm("¿Eliminar esta cotización? Esta acción no se puede deshacer.")) return;
+    if (!(await confirm("¿Eliminar esta cotización? Esta acción no se puede deshacer.", { confirmLabel: "Eliminar" }))) return;
     try {
       await deleteQuote(quote.id);
+      toast.success("Cotización eliminada");
       router.push("/cotizaciones");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar la cotización");
+      const message = err instanceof ApiError ? err.message : "No se pudo eliminar la cotización";
+      setError(message);
+      toast.error(message);
     }
   }
 

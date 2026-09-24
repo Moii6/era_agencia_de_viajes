@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { Client, listClients } from "@/lib/clients";
 import { QuoteInput } from "@/lib/quotes";
@@ -16,6 +17,7 @@ type QuoteFormProps = {
 };
 
 export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
+  const toast = useToast();
   const [clientId, setClientId] = useState("");
   const [tripId, setTripId] = useState("");
   const [validUntil, setValidUntil] = useState("");
@@ -48,7 +50,9 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
         notes: notes || undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo crear la cotización");
+      const message = err instanceof ApiError ? err.message : "No se pudo crear la cotización";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

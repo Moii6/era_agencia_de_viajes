@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { UserForm } from "@/components/forms/UserForm";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/formats";
@@ -27,6 +29,8 @@ type MyProfileCardProps = {
 };
 
 export function MyProfileCard({ currentUserRole }: MyProfileCardProps) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [me, setMe] = useState<AgencyUser | null>(null);
   const [error, setError] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -45,7 +49,8 @@ export function MyProfileCard({ currentUserRole }: MyProfileCardProps) {
 
   async function handleEdit(input: UserInput | UserUpdateInput) {
     if (!me) return;
-    await updateUser(me.id, input as UserUpdateInput);
+    const result = await updateUser(me.id, input as UserUpdateInput);
+    toast.success(result.requestedByUserId ? "Cambio guardado, pendiente de aprobación" : "Perfil actualizado");
     setShowEditModal(false);
     await load();
   }
@@ -54,20 +59,26 @@ export function MyProfileCard({ currentUserRole }: MyProfileCardProps) {
     if (!me) return;
     try {
       await approveUser(me.id);
+      toast.success("Aprobación registrada");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo aprobar");
+      const message = err instanceof ApiError ? err.message : "No se pudo aprobar";
+      setError(message);
+      toast.error(message);
     }
   }
 
   async function handleReject() {
     if (!me) return;
-    if (!confirm("¿Rechazar el cambio propuesto a tu cuenta?")) return;
+    if (!(await confirm("¿Rechazar el cambio propuesto a tu cuenta?", { confirmLabel: "Rechazar" }))) return;
     try {
       await rejectUser(me.id);
+      toast.success("Solicitud rechazada");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo rechazar");
+      const message = err instanceof ApiError ? err.message : "No se pudo rechazar";
+      setError(message);
+      toast.error(message);
     }
   }
 

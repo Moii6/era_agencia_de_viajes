@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { Provider, ProviderInput, ProviderType } from "@/lib/providers";
 
@@ -21,6 +22,7 @@ type ProviderFormProps = {
 };
 
 export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps) {
+  const toast = useToast();
   const [name, setName] = useState(provider?.name ?? "");
   const [type, setType] = useState<ProviderType>(provider?.type ?? "HOTEL");
   const [address, setAddress] = useState(provider?.address ?? "");
@@ -51,7 +53,9 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
         notes: notes || undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el proveedor");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar el proveedor";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

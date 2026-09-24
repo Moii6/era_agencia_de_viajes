@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { Tenant, TenantInput } from "@/lib/tenant";
 
@@ -15,6 +16,7 @@ type TenantFormProps = {
 };
 
 export function TenantForm({ tenant, onSubmit, onCancel }: TenantFormProps) {
+  const toast = useToast();
   const [name, setName] = useState(tenant.name);
   const [representativeName, setRepresentativeName] = useState(tenant.representativeName ?? "");
   const [address, setAddress] = useState(tenant.address ?? "");
@@ -45,7 +47,9 @@ export function TenantForm({ tenant, onSubmit, onCancel }: TenantFormProps) {
         notes: notes || undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar la agencia");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar la agencia";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

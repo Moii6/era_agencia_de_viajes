@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { DepositInput } from "@/lib/reservations";
 
@@ -16,6 +17,7 @@ type DepositFormProps = {
 };
 
 export function DepositForm({ minimumInitialAmount, hasInitialDeposit, onSubmit, onCancel }: DepositFormProps) {
+  const toast = useToast();
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [isInitialDeposit, setIsInitialDeposit] = useState(!hasInitialDeposit);
@@ -36,7 +38,9 @@ export function DepositForm({ minimumInitialAmount, hasInitialDeposit, onSubmit,
         note: note || undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo registrar el anticipo");
+      const message = err instanceof ApiError ? err.message : "No se pudo registrar el anticipo";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

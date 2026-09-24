@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import { DepositForm } from "@/components/forms/DepositForm";
 import { createDeposit, Deposit, DepositInput } from "@/lib/reservations";
 import { formatDate } from "@/lib/formats";
@@ -14,12 +15,14 @@ type DepositsSectionProps = {
 };
 
 export function DepositsSection({ reservationId, deposits, minimumInitialAmount, onChange }: DepositsSectionProps) {
+  const toast = useToast();
   const [showModal, setShowModal] = useState(false);
 
   const hasInitialDeposit = deposits.some((d) => d.isInitialDeposit);
 
   async function handleSubmit(input: DepositInput) {
     await createDeposit(reservationId, input);
+    toast.success("Anticipo registrado");
     setShowModal(false);
     onChange();
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { Traveler, TravelerInput, TravelerType, TravelerUpdateInput } from "@/lib/reservations";
 
@@ -23,6 +24,7 @@ type TravelerFormProps = {
 };
 
 export function TravelerForm({ traveler, occupancyOptions, onSubmit, onCancel }: TravelerFormProps) {
+  const toast = useToast();
   const [quoteOccupancyId, setQuoteOccupancyId] = useState(traveler?.quoteOccupancyId ?? "");
   const [fullName, setFullName] = useState(traveler?.fullName ?? "");
   const [age, setAge] = useState(traveler?.age?.toString() ?? "");
@@ -56,7 +58,9 @@ export function TravelerForm({ traveler, occupancyOptions, onSubmit, onCancel }:
         await onSubmit({ ...base, quoteOccupancyId });
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el viajero");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar el viajero";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

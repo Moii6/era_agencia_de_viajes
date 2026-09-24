@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { Client, ClientInput, ClientStage } from "@/lib/clients";
 
@@ -22,6 +23,7 @@ type ClientFormProps = {
 };
 
 export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
+  const toast = useToast();
   const [name, setName] = useState(client?.name ?? "");
   const [email, setEmail] = useState(client?.email ?? "");
   const [phone, setPhone] = useState(client?.phone ?? "");
@@ -46,7 +48,9 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
         notes: notes || undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el cliente");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar el cliente";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

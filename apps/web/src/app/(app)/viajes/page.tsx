@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import { TripForm } from "@/components/forms/TripForm";
 import { ApiError } from "@/lib/api";
 import { getUser } from "@/lib/auth";
@@ -21,6 +22,7 @@ const STATUS_FILTERS: { value: TripStatus | "ALL"; label: string }[] = [
 
 export default function ViajesPage() {
   const router = useRouter();
+  const toast = useToast();
   const [trips, setTrips] = useState<Trip[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<TripStatus | "ALL">("ALL");
   const [error, setError] = useState("");
@@ -51,6 +53,7 @@ export default function ViajesPage() {
 
   async function handleCreate(input: TripInput) {
     const trip = await createTrip(input);
+    toast.success("Viaje creado");
     setShowCreateModal(false);
     router.push(`/viajes/${trip.id}`);
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { QuoteDetail, QuoteUpdateInput } from "@/lib/quotes";
 
@@ -19,6 +20,7 @@ type QuoteEditFormProps = {
 };
 
 export function QuoteEditForm({ quote, onSubmit, onCancel }: QuoteEditFormProps) {
+  const toast = useToast();
   const [validUntil, setValidUntil] = useState(toDateInput(quote.validUntil));
   const [notes, setNotes] = useState(quote.notes ?? "");
   const [error, setError] = useState("");
@@ -35,7 +37,9 @@ export function QuoteEditForm({ quote, onSubmit, onCancel }: QuoteEditFormProps)
         notes: notes || undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar la cotización");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar la cotización";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import { TenantForm } from "@/components/forms/TenantForm";
 import { MyProfileCard } from "@/components/tenant/MyProfileCard";
 import { UsersSection } from "@/components/tenant/UsersSection";
@@ -12,6 +13,7 @@ import { getTenant, Tenant, TenantInput, updateTenant } from "@/lib/tenant";
 
 export default function AgenciaPage() {
   const router = useRouter();
+  const toast = useToast();
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
   const [error, setError] = useState("");
@@ -40,6 +42,7 @@ export default function AgenciaPage() {
 
   async function handleEdit(input: TenantInput) {
     await updateTenant(input);
+    toast.success("Agencia actualizada");
     setShowEditModal(false);
     await load();
   }

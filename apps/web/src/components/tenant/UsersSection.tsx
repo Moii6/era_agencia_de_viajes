@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { UserForm } from "@/components/forms/UserForm";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/formats";
@@ -49,6 +51,8 @@ type UsersSectionProps = {
 };
 
 export function UsersSection({ currentUserId, currentUserRole }: UsersSectionProps) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [users, setUsers] = useState<AgencyUser[] | null>(null);
   const [error, setError] = useState("");
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
@@ -68,9 +72,11 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
 
   async function handleSubmit(input: UserInput | UserUpdateInput) {
     if (modalMode === "edit" && editingUser) {
-      await updateUser(editingUser.id, input as UserUpdateInput);
+      const result = await updateUser(editingUser.id, input as UserUpdateInput);
+      toast.success(result.requestedByUserId ? "Cambio guardado, pendiente de aprobación" : "Usuario actualizado");
     } else {
-      await createUser(input as UserInput);
+      const result = await createUser(input as UserInput);
+      toast.success(result.status === "PENDING" ? "Usuario dado de alta, pendiente de aprobación" : "Usuario creado");
     }
     setModalMode(null);
     setEditingUser(null);
@@ -80,39 +86,51 @@ export function UsersSection({ currentUserId, currentUserRole }: UsersSectionPro
   async function handleApprove(user: AgencyUser) {
     try {
       await approveUser(user.id);
+      toast.success("Aprobación registrada");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo aprobar");
+      const message = err instanceof ApiError ? err.message : "No se pudo aprobar";
+      setError(message);
+      toast.error(message);
     }
   }
 
   async function handleReject(user: AgencyUser) {
     const what = user.status === "PENDING" ? "el alta" : "el cambio propuesto";
-    if (!confirm(`¿Rechazar ${what} de "${user.name}"?`)) return;
+    if (!(await confirm(`¿Rechazar ${what} de "${user.name}"?`, { confirmLabel: "Rechazar" }))) return;
     try {
       await rejectUser(user.id);
+      toast.success("Solicitud rechazada");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo rechazar");
+      const message = err instanceof ApiError ? err.message : "No se pudo rechazar";
+      setError(message);
+      toast.error(message);
     }
   }
 
   async function handleDeactivate(user: AgencyUser) {
-    if (!confirm(`¿Desactivar a "${user.name}"? Perderá acceso de inmediato.`)) return;
+    if (!(await confirm(`¿Desactivar a "${user.name}"? Perderá acceso de inmediato.`, { confirmLabel: "Desactivar" }))) return;
     try {
       await deactivateUser(user.id);
+      toast.success("Usuario desactivado");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo desactivar");
+      const message = err instanceof ApiError ? err.message : "No se pudo desactivar";
+      setError(message);
+      toast.error(message);
     }
   }
 
   async function handleReactivate(user: AgencyUser) {
     try {
       await reactivateUser(user.id);
+      toast.success("Usuario reactivado");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo reactivar");
+      const message = err instanceof ApiError ? err.message : "No se pudo reactivar";
+      setError(message);
+      toast.error(message);
     }
   }
 

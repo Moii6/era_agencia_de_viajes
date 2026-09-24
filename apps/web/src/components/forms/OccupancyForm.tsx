@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { OccupancyInput, OccupancyUpdateInput, QuoteOccupancy } from "@/lib/quotes";
 import { RoomType } from "@/lib/trips";
@@ -17,6 +18,7 @@ type OccupancyFormProps = {
 };
 
 export function OccupancyForm({ occupancy, roomTypes, onSubmit, onCancel }: OccupancyFormProps) {
+  const toast = useToast();
   const [roomTypeId, setRoomTypeId] = useState(occupancy?.roomTypeId ?? "");
   const [label, setLabel] = useState(occupancy?.label ?? "");
   const [adults, setAdults] = useState(occupancy?.adults?.toString() ?? "1");
@@ -48,7 +50,9 @@ export function OccupancyForm({ occupancy, roomTypes, onSubmit, onCancel }: Occu
         });
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar la ocupación");
+      const message = err instanceof ApiError ? err.message : "No se pudo guardar la ocupación";
+      setError(message);
+      toast.error(message);
       setIsSaving(false);
     }
   }
