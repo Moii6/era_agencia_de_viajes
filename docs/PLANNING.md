@@ -764,6 +764,34 @@ acciones del usuario, no notificaciones en segundo plano).
   Reiniciarlo (`pkill` + `pnpm dev:api`) lo resolvió. Lección: un `prisma generate` a medio día de
   sesión larga puede dejar el backend corriendo con un cliente viejo aunque el build sí compile.
 
+**Toasts arriba a la derecha y más grandes (2026-09-25):** ajuste puntual de UI a petición del
+usuario — el stack de `Toast.tsx` pasó de `bottom-4 right-4` a `top-4 right-4`, con más padding,
+texto e íconos más grandes (`max-w-sm`→`max-w-md`, `px-4 py-3 text-sm`→`px-5 py-4 text-base`).
+Verificado con Playwright + screenshot en `http://localhost:3000/clientes`.
+
+**Bug: el selector de autobús con una sola opción no se preseleccionaba (2026-09-25):** el usuario
+reportó que en una reserva real (`b9b7b7bf-ae0b-4ce8-ae86-cd4ed5773fe2`), aunque el viaje sí tenía
+un autobús, no podía asignar asientos. Se investigó la reserva completa por Prisma (viaje, autobús,
+viajeros) — todo el dato estaba correcto, y una prueba directa del endpoint sí lograba asignar un
+asiento con éxito. El problema resultó ser puramente de UX: `SeatAssigner` (dentro de
+`TravelersSection.tsx`) inicializa `busId` en `""` sin importar cuántos autobuses haya, así que con
+un solo autobús en el `<select>`, la opción se ve como si ya estuviera elegida pero su valor real
+sigue siendo el placeholder vacío — el botón "Asignar" queda deshabilitado (`!busId || !seatNumber`)
+aunque el usuario ya haya escrito el número de asiento. El usuario confirmó el diagnóstico con una
+captura mostrando exactamente eso: autobús en "Asignar autobús...", asiento "6" ya escrito, botón
+"Asignar" gris.
+- Fix: `useState(buses.length === 1 ? buses[0].id : "")` — con un solo autobús se preselecciona
+  automáticamente; con más de uno, se mantiene la elección explícita (si hay más de una opción real,
+  no hay opción "obvia" que asumir). El reset después de asignar (para el siguiente viajero) también
+  usa la misma regla, en vez de volver siempre a `""`.
+- **Nota:** para reproducir el bug se probó primero directamente sobre la reserva real del usuario
+  (no una de prueba) — la primera prueba, antes del fix, sí llegó a asignar con éxito el asiento del
+  primer viajero (Josue Arevalo Rubio → bus 1, #5) porque el script de prueba sí abrió el `<select>`
+  explícitamente; el bug solo se manifiesta cuando el usuario nunca toca el dropdown. Se avisó al
+  usuario de esto antes de seguir. Después del fix, se verificó con el segundo viajero (Jane Doe) que
+  el botón queda habilitado sin tocar el selector — asignado a bus 1, #6. La reserva real del usuario
+  quedó con ambos viajeros ya asentados como resultado de esta verificación.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

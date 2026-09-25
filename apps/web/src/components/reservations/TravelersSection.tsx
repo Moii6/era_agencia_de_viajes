@@ -30,7 +30,11 @@ function SeatAssigner({
   buses: Bus[];
   onAssign: (input: { busId: string; seatNumber: string }) => Promise<void>;
 }) {
-  const [busId, setBusId] = useState("");
+  // With only one bus there's nothing to actually choose — pre-select it so
+  // the button isn't stuck disabled behind a dropdown that looks "already
+  // answered" (a single option reads as selected even though its value is
+  // the empty placeholder).
+  const [busId, setBusId] = useState(buses.length === 1 ? buses[0].id : "");
   const [seatNumber, setSeatNumber] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -41,7 +45,7 @@ function SeatAssigner({
     setIsSaving(true);
     try {
       await onAssign({ busId, seatNumber });
-      setBusId("");
+      setBusId(buses.length === 1 ? buses[0].id : "");
       setSeatNumber("");
     } finally {
       setIsSaving(false);
