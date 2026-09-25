@@ -49,19 +49,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-full max-w-sm flex-col gap-2">
+      <div className="pointer-events-none fixed right-4 top-4 z-[100] flex w-full max-w-md flex-col gap-3">
         {toasts.map((toast) => (
           <div
             key={toast.id}
             role="status"
-            className={`pointer-events-auto flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg shadow-slate-900/10 dark:shadow-black/30 ${TONE_CLASSES[toast.type]}`}
+            className={`pointer-events-auto flex items-start gap-3 rounded-2xl border px-5 py-4 text-base font-medium shadow-xl shadow-slate-900/10 dark:shadow-black/30 ${TONE_CLASSES[toast.type]}`}
           >
-            <span className="mt-0.5">{ICONS[toast.type]}</span>
+            <span className="mt-0.5 text-lg">{ICONS[toast.type]}</span>
             <span className="flex-1">{toast.message}</span>
             <button
               onClick={() => dismiss(toast.id)}
               aria-label="Cerrar"
-              className="text-current opacity-60 hover:opacity-100"
+              className="text-lg text-current opacity-60 hover:opacity-100"
             >
               ✕
             </button>
