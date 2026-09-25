@@ -792,6 +792,25 @@ captura mostrando exactamente eso: autobús en "Asignar autobús...", asiento "6
   el botón queda habilitado sin tocar el selector — asignado a bus 1, #6. La reserva real del usuario
   quedó con ambos viajeros ya asentados como resultado de esta verificación.
 
+**Elegir el asiento de una lista de disponibles, no escribirlo a mano (2026-09-25):** siguiendo la
+conversación sobre el bug anterior, el usuario pidió cambiar el campo de texto libre por un selector
+con los asientos realmente disponibles de ese autobús.
+- Backend: `BusesService.findAllForTrip` ahora incluye `seatAssignments: { select: { seatNumber:
+  true } }` en cada autobús — la ocupación es por autobús **en todo el viaje** (cualquier reserva,
+  o un guía), no solo la reserva que se está viendo, así que tenía que salir del mismo `GET
+  /trips/:tripId/buses` que ya se usaba para listar autobuses, no de un endpoint nuevo.
+- Frontend: el tipo `Bus` gana `seatAssignments?: {seatNumber: string}[]` (opcional — solo viene en
+  el listado, no en las respuestas de crear/editar un autobús). `SeatAssigner` (dentro de
+  `TravelersSection.tsx`) calcula los asientos disponibles como el rango `1..seatCapacity` menos los
+  ya ocupados del autobús seleccionado, y reemplaza el `<input>` de texto libre por un `<select>`.
+  Cambiar de autobús limpia el asiento elegido (la disponibilidad depende de cuál autobús es). Si el
+  autobús seleccionado ya no tiene lugares, el select se deshabilita y muestra "Sin lugares" en vez
+  de una lista vacía.
+- Verificado con Playwright contra tres reservas de prueba aisladas (no la del usuario esta vez):
+  autobús vacío de 3 lugares → selector ofrece exactamente `1, 2, 3`; con 2 de 3 ya ocupados → ofrece
+  solo `3`; con los 3 ocupados → "Sin lugares", selector y botón "Asignar" deshabilitados. Datos de
+  prueba borrados al terminar.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

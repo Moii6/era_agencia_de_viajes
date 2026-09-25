@@ -20,6 +20,10 @@ export class BusesService {
     return this.prisma.bus.findMany({
       where: { tripId },
       orderBy: { label: 'asc' },
+      // So the frontend can offer a "pick from available seats" list instead
+      // of a free-text field — occupancy is trip-wide (any reservation's
+      // traveler, or a guide), not scoped to one reservation.
+      include: { seatAssignments: { select: { seatNumber: true } } },
     });
   }
 

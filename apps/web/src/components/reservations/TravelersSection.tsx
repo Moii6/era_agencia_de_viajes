@@ -40,6 +40,22 @@ function SeatAssigner({
 
   if (buses.length === 0) return null;
 
+  // Seat numbers are always the flat range 1..seatCapacity — occupied ones
+  // (by any reservation's traveler, or a guide) come from listBuses, which
+  // covers the whole trip, not just this reservation.
+  const selectedBus = buses.find((bus) => bus.id === busId);
+  const occupiedSeats = new Set((selectedBus?.seatAssignments ?? []).map((s) => s.seatNumber));
+  const availableSeats = selectedBus
+    ? Array.from({ length: selectedBus.seatCapacity }, (_, i) => String(i + 1)).filter((seat) => !occupiedSeats.has(seat))
+    : [];
+
+  function handleBusChange(newBusId: string) {
+    setBusId(newBusId);
+    // Available seats depend on the bus — a seat picked for one bus doesn't
+    // necessarily exist (or stay free) on another.
+    setSeatNumber("");
+  }
+
   async function handleAssign() {
     if (!busId || !seatNumber) return;
     setIsSaving(true);
@@ -54,7 +70,7 @@ function SeatAssigner({
 
   return (
     <div className="mt-2 flex items-center gap-2">
-      <select value={busId} onChange={(e) => setBusId(e.target.value)} className={`${selectClass} flex-1`}>
+      <select value={busId} onChange={(e) => handleBusChange(e.target.value)} className={`${selectClass} flex-1`}>
         <option value="">Asignar autobús...</option>
         {buses.map((bus) => (
           <option key={bus.id} value={bus.id}>
@@ -62,12 +78,19 @@ function SeatAssigner({
           </option>
         ))}
       </select>
-      <input
+      <select
         value={seatNumber}
         onChange={(e) => setSeatNumber(e.target.value)}
-        placeholder="Asiento"
-        className={`${selectClass} w-24`}
-      />
+        disabled={!selectedBus || availableSeats.length === 0}
+        className={`${selectClass} w-28`}
+      >
+        <option value="">{selectedBus && availableSeats.length === 0 ? "Sin lugares" : "Asiento..."}</option>
+        {availableSeats.map((seat) => (
+          <option key={seat} value={seat}>
+            {seat}
+          </option>
+        ))}
+      </select>
       <button
         type="button"
         onClick={handleAssign}

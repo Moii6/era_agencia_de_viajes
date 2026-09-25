@@ -185,12 +185,18 @@ que no te deja (o que la única ocupación disponible aparece deshabilitada).
 
 ## 7. Asignar asientos
 
-Debajo de cada viajero sin asiento asignado hay un selector de autobús + número de asiento.
+Debajo de cada viajero sin asiento asignado hay dos selectores: autobús, y asiento (una lista de los
+asientos **disponibles** de ese autobús — no un campo de texto libre).
 
 | Viajero | Autobús | Asiento |
 |---|---|---|
 | Ana Test | `Autobús HP-1` | `1` |
 | Test Jr | `Autobús HP-1` | `2` |
+
+Con un solo autobús en el viaje, el selector de autobús ya viene preseleccionado — no hace falta
+tocarlo. El selector de asiento solo lista números que nadie más ocupa en ese autobús (en todo el
+viaje, no solo en esta reserva); si el autobús ya está lleno, muestra "Sin lugares" y el botón
+"Asignar" queda deshabilitado.
 
 Después de asignar, cada tarjeta debe mostrar `Asiento: Autobús HP-1 · #1` (o `#2`) con la opción
 "Quitar asiento" en vez del selector.
