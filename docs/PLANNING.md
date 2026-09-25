@@ -811,6 +811,24 @@ con los asientos realmente disponibles de ese autobús.
   solo `3`; con los 3 ocupados → "Sin lugares", selector y botón "Asignar" deshabilitados. Datos de
   prueba borrados al terminar.
 
+**Ver pasajeros con asiento asignado en la página del viaje (2026-09-25):** el usuario pidió poder
+ver, desde el viaje (no desde cada reserva por separado), quién ya tiene asiento en cada autobús.
+- Se reutilizó el mismo `include` que ya se había agregado a `BusesService.findAllForTrip` para el
+  selector de asientos (issue anterior), ampliándolo: cada `seatAssignment` ahora trae también
+  `traveler: {fullName, isHolder}` y `tripGuide: {isLead, user: {name}}` — exactamente uno de los
+  dos viene lleno, ya que un asiento lo ocupa un viajero o un guía, nunca ambos.
+- `BusesSection.tsx` (la misma sección de "Autobuses" del viaje) ahora muestra, debajo de cada
+  autobús, "X/Y asientos ocupados" en la línea de resumen, y una lista `#{asiento} {nombre}` para
+  cada asiento ocupado — ordenada numéricamente por asiento (no alfabéticamente: el nombre del campo
+  es un `String` libre, así que un orden por string pondría "10" antes que "2"; el orden se hace en
+  el frontend con `Number(seatNumber)`, no en la consulta). Cada fila lleva una etiqueta si aplica:
+  "Titular" para el viajero titular de su reserva, "Guía" o "Guía líder" para un asiento de guía.
+  Visible para cualquier rol que pueda ver el viaje (incluido GUIDE, de solo lectura) — no depende
+  de `readOnly`, es información, no una acción.
+- Verificado en navegador y con captura de pantalla contra el viaje real del usuario: "bus 1"
+  muestra "2/30 asientos ocupados" y la lista "#5 Jane Doe" / "#6 Josue Arevalo Rubio · Titular", en
+  el orden numérico correcto.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

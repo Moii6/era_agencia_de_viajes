@@ -38,8 +38,13 @@ export type Bus = {
   driverLicense: string | null;
   notes: string | null;
   // Only present on the list returned by listBuses (used to offer a
-  // pick-from-available-seats list) — absent on create/update responses.
-  seatAssignments?: { seatNumber: string }[];
+  // pick-from-available-seats list and show who's already seated) — absent
+  // on create/update responses. Exactly one of traveler/tripGuide is set.
+  seatAssignments?: {
+    seatNumber: string;
+    traveler: { id: string; fullName: string; isHolder: boolean } | null;
+    tripGuide: { id: string; isLead: boolean; user: { id: string; name: string } } | null;
+  }[];
 };
 
 export type RoomType = {
