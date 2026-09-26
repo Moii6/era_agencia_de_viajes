@@ -282,7 +282,10 @@ model SeatAssignment {
   travelerId  String?    @unique
   traveler    Traveler?  @relation(fields: [travelerId], references: [id])
   tripGuideId String?    @unique
-  tripGuide   TripGuide? @relation(fields: [tripGuideId], references: [id])
+  // Cascade instead of the original SET NULL: removing a guide from a trip
+  // should delete their seat assignment outright, not leave a dangling
+  // SeatAssignment row pointing at nobody (empty travelerId AND tripGuideId).
+  tripGuide   TripGuide? @relation(fields: [tripGuideId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
 
   @@unique([busId, seatNumber])

@@ -61,6 +61,15 @@ export type RoomType = {
   _count?: { occupancies: number };
 };
 
+export type TripGuide = {
+  id: string;
+  tripId: string;
+  userId: string;
+  isLead: boolean;
+  createdAt: string;
+  user: { id: string; name: string; email: string };
+};
+
 export type Activity = {
   id: string;
   tripId: string;
@@ -114,6 +123,11 @@ export type RoomTypeInput = {
   characteristics?: string;
   maxOccupancy: number;
   quantityAvailable?: number;
+};
+
+export type TripGuideInput = {
+  userId: string;
+  isLead?: boolean;
 };
 
 export type ActivityInput = {
@@ -181,6 +195,20 @@ export function updateRoomType(tripId: string, roomTypeId: string, input: Partia
 
 export function deleteRoomType(tripId: string, roomTypeId: string) {
   return apiFetch<RoomType>(`/trips/${tripId}/room-types/${roomTypeId}`, { method: "DELETE" });
+}
+
+// --- Guides ---
+
+export function listTripGuides(tripId: string) {
+  return apiFetch<TripGuide[]>(`/trips/${tripId}/guides`);
+}
+
+export function createTripGuide(tripId: string, input: TripGuideInput) {
+  return apiFetch<TripGuide>(`/trips/${tripId}/guides`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function deleteTripGuide(tripId: string, guideId: string) {
+  return apiFetch<TripGuide>(`/trips/${tripId}/guides/${guideId}`, { method: "DELETE" });
 }
 
 // --- Activities ---

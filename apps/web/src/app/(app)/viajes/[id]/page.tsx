@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { TripForm } from "@/components/forms/TripForm";
 import { BusesSection } from "@/components/trips/BusesSection";
+import { GuidesSection } from "@/components/trips/GuidesSection";
 import { RoomTypesSection } from "@/components/trips/RoomTypesSection";
 import { ActivitiesSection } from "@/components/trips/ActivitiesSection";
 import { ApiError } from "@/lib/api";
@@ -157,6 +158,9 @@ export default function TripDetailPage() {
       ) : null}
 
       <div className="mt-8 space-y-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <GuidesSection tripId={trip.id} readOnly={isGuide} />
+        </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <BusesSection tripId={trip.id} readOnly={isGuide} />
         </div>

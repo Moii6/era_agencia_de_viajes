@@ -852,6 +852,49 @@ todavía sin reserva, ni una reserva que sigue `PENDING_DEPOSIT` cuentan como oc
   — la página mostró "4 de 5 disponibles" para el tipo de habitación que usa esa reserva, confirmando
   que la cuenta baja justo cuando la reserva pasa a confirmada, no antes.
 
+**Ver y asignar guías en la página del viaje (2026-09-26):** el usuario pidió que en el viaje se
+pudiera ver quién es el guía y agregar uno. `TripGuide` ya existía como modelo de Prisma desde antes
+en esta sesión, pero nunca se había construido ningún endpoint ni UI para él — había que levantar el
+módulo completo desde cero.
+- Backend nuevo: `apps/api/src/trips/guides/` (`guides.service.ts`, `guides.controller.ts`,
+  `dto/create-trip-guide.dto.ts`), registrado en `trips.module.ts`. Sigue exactamente el mismo patrón
+  de acceso que Buses/Tipos de habitación/Actividades: `GET` abierto a `OWNER, ADMIN, AGENT, GUIDE`
+  (un `GUIDE` solo ve los viajes en los que él mismo está asignado, vía el mismo filtro
+  `guides: { some: { userId: requester.id } }` usado para las demás secciones), `POST`/`DELETE`
+  restringidos a `OWNER, ADMIN`.
+- Reglas de negocio nuevas en `GuidesService.create`:
+  - Solo un usuario con `role === 'GUIDE'` puede asignarse como guía de un viaje (rechazado con
+    `BadRequestException` si no).
+  - Como mucho un guía líder (`isLead: true`) por viaje — si ya existe uno, se rechaza el alta del
+    segundo con un mensaje claro en vez de quitarle la insignia al primero en silencio. Fue una
+    decisión propia (no la pidió el usuario explícitamente) razonada a partir de que "líder" es una
+    insignia singular por definición; si el negocio necesita más de un líder por viaje, se revisita.
+  - Duplicado (mismo usuario ya asignado a ese viaje) rechazado con `ConflictException`, respaldado
+    también por el `@@unique([tripId, userId])` ya existente en el modelo.
+- Migración `20260926055511_cascade_delete_guide_seat`: se cambió `SeatAssignment.tripGuide` de
+  `ON DELETE SET NULL` (el original) a `ON DELETE CASCADE`. Antes, quitar un guía del viaje dejaba una
+  fila de `SeatAssignment` huérfana (ni viajero ni guía, solo el número de asiento). Nota: a
+  diferencia del bug de `QuoteOccupancy` de una entrada anterior, aquí el `SET NULL` original nunca
+  iba a tronar con un error de FK — era solo higiene de datos, no una corrección de un crash.
+- Frontend: `lib/trips.ts` gana el tipo `TripGuide`/`TripGuideInput` y
+  `listTripGuides`/`createTripGuide`/`deleteTripGuide`; `GuideForm.tsx` (selector filtrado a usuarios
+  `role === "GUIDE"` y `status === "ACTIVE"` que no estén ya asignados a ese viaje, más un checkbox
+  "Es el guía líder") y `GuidesSection.tsx` (mismo patrón que `BusesSection`/`ActivitiesSection`:
+  `ConfirmDialog` + toasts, insignia "Líder", botón "Quitar" oculto en modo `readOnly`). Se montó como
+  la primera subsección del viaje, antes de Autobuses.
+- Verificado end-to-end con Playwright contra el viaje real del usuario
+  (`dc22686a-3796-4064-a140-7176aec0ae49`), con un usuario de prueba `guide.verify@agenciadeprueba.mx`
+  (rol GUIDE): estado vacío inicial, el selector de alta excluye correctamente a un guía ya asignado
+  (probado con "Guide Verify" ya agregado), y el ciclo completo agregar → quitar deja la base de datos
+  exactamente como empezó (confirmado por consulta directa a la tabla `TripGuide`, no solo por la UI).
+  Una corrida anterior del script de verificación quedó a medio terminar y dejó una asignación de
+  prueba real (Brenda Montalvo, usuario con rol GUIDE ya existente) pegada al viaje — se detectó y se
+  limpió antes de dar la función por terminada.
+- **Pendiente, fuera de alcance de esta tarea:** las dos reglas de negocio sobre el equipo de guías ya
+  documentadas en `DATA_MODEL.md` (aviso de mínimo 2 guías + 1 líder cerca de la salida, y bloquear
+  dejar un autobús sin guía) siguen sin implementarse — lo que se pidió y se construyó aquí es solo
+  ver quién es el guía y poder agregarlo/quitarlo.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
