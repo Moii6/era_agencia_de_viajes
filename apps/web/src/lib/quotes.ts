@@ -1,12 +1,16 @@
 import { apiFetch } from "./api";
 
-export type QuoteStatus = "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED";
+export type QuoteStatus = "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "CANCELLED" | "EXPIRED";
 
+// EXPIRED is never a manual option — the backend sets it on its own once
+// validUntil passes. CANCELLED is the manual way to kill a quote early for
+// any other reason.
 export const QUOTE_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
-  DRAFT: ["SENT", "REJECTED", "EXPIRED"],
-  SENT: ["ACCEPTED", "REJECTED", "EXPIRED"],
+  DRAFT: ["SENT", "CANCELLED"],
+  SENT: ["ACCEPTED", "REJECTED", "CANCELLED"],
   ACCEPTED: [],
   REJECTED: [],
+  CANCELLED: [],
   EXPIRED: [],
 };
 
@@ -43,11 +47,38 @@ export type Quote = {
   commission: string;
   total: string;
   status: QuoteStatus;
+  // Set the first time the quote is marked SENT — backs the client-facing
+  // share link. Null until then.
+  shareToken: string | null;
   createdAt: string;
   updatedAt: string;
   client?: { id: string; name: string };
   trip?: { id: string; name: string; departureDate: string };
   _count?: { occupancies: number };
+};
+
+export type PublicQuote = {
+  client: { name: string };
+  trip: {
+    name: string;
+    destination: string | null;
+    departureDate: string;
+    departurePoint: string;
+    returnDate: string;
+    returnPoint: string;
+  };
+  status: QuoteStatus;
+  currency: string;
+  total: string;
+  validUntil: string | null;
+  notes: string | null;
+  occupancies: {
+    label: string | null;
+    roomType: { name: string };
+    adults: number;
+    minors: number;
+    activities: { name: string; quantity: number }[];
+  }[];
 };
 
 export type QuoteDetail = Quote & {
@@ -111,6 +142,10 @@ export function updateQuote(id: string, input: QuoteUpdateInput) {
 
 export function deleteQuote(id: string) {
   return apiFetch<Quote>(`/quotes/${id}`, { method: "DELETE" });
+}
+
+export function getPublicQuote(token: string) {
+  return apiFetch<PublicQuote>(`/public/quotes/${token}`);
 }
 
 // --- Occupancies ---

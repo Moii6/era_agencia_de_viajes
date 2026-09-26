@@ -895,6 +895,69 @@ módulo completo desde cero.
   dejar un autobús sin guía) siguen sin implementarse — lo que se pidió y se construyó aquí es solo
   ver quién es el guía y poder agregarlo/quitarlo.
 
+**Link público para enviar la cotización al cliente (2026-09-26):** el usuario preguntó cómo debería
+funcionar el estado `SENT` de una cotización, ya que no había ningún mecanismo real de "enviar". Se le
+presentaron dos opciones (QR vs. PDF descargable) y se recomendó un link compartible de solo lectura
+sin necesidad de cuenta — es como de verdad opera la agencia (WhatsApp), y un QR no sería más que la
+misma URL codificada. El usuario aceptó empezar por ahí.
+- `Quote.shareToken` (string único, nullable): se genera la primera vez que la cotización pasa a
+  `SENT`, dentro de `QuotesService.update`. Se conserva aunque el estado cambie después (aceptada,
+  rechazada, etc.) para que un link ya compartido no deje de funcionar.
+- Nuevo endpoint público `GET /public/quotes/:token` (`PublicQuotesController`, sin
+  `JwtAuthGuard`/`RolesGuard` — no hay guard global en `main.ts`, así que de verdad queda sin
+  autenticación). El token en la URL es el único control de acceso.
+- Se le preguntó al usuario si el cliente debía ver el desglose completo (Subtotal + Comisión 5% +
+  Total, igual que el agente) o solo el Total final — contestó que solo el Total. Por eso
+  `findByShareToken` no expone `subtotal`/`commission` en absoluto, y la página pública
+  (`apps/web/src/app/c/[token]/page.tsx`) tampoco calcula ni suma precios por ocupación/actividad —
+  solo lista qué incluye cada ocupación (habitación, adultos/menores, actividades) de forma
+  descriptiva, y muestra el `Total` como único número, para no dar pie a que el cliente reconstruya la
+  comisión restando el desglose.
+- La página pública vive en `apps/web/src/app/c/[token]/page.tsx`, **fuera** del route group `(app)`
+  — la protección de sesión vive únicamente en `(app)/layout.tsx`, así que una ruta fuera de ese grupo
+  queda pública sin ningún cambio adicional.
+- En la vista interna de la cotización (`cotizaciones/[id]/page.tsx`) aparece una tarjeta "Link para
+  el cliente" una vez que existe `shareToken`, con el link completo y un botón "Copiar"
+  (`navigator.clipboard`).
+- Verificado end-to-end con Playwright: antes de `SENT` no aparece la tarjeta; al pasar a `SENT` se
+  genera el token y aparece el link; abrir ese link en un contexto de navegador nuevo (sin sesión)
+  carga la cotización correctamente, muestra cliente/viaje/ocupaciones/actividades y **solo** el
+  Total (sin "Comisión" ni "Subtotal" en ningún lado de la página); un token inválido muestra un
+  mensaje limpio de "no encontrada" en vez de un error crudo.
+
+**Estados de cotización: agregar CANCELLED y automatizar EXPIRED (2026-09-26):** al probar el link
+compartible, el usuario notó que el estado terminó en `ACCEPTED` en vez de `SENT` (una cotización de
+prueba en la que él mismo cambió el estado manualmente después) y a partir de ahí propuso una revisión
+completa de los estados. Después de dos rondas de aclaración (el usuario mezcló "approved"/"accepted"
+y no quedó claro al inicio si `CANCELLED` era lo mismo que `EXPIRED`), quedó así:
+- `CANCELLED` es un estado **nuevo**, para que el agente cancele la cotización a mano por cualquier
+  motivo (el viaje ya no aplica, el cliente avisó por teléfono, etc.).
+- `EXPIRED` ya existía, pero pasa de ser una opción manual del dropdown a ser **automático**: el
+  sistema la aplica solo cuando pasa `validUntil`, nunca la elige el agente.
+- `ACCEPTED`/`REJECTED`/`SENT` se quedan exactamente igual que antes, mismo nombre y comportamiento.
+- Transiciones nuevas en `QuotesService` (`ALLOWED_TRANSITIONS`):
+  `DRAFT → [SENT, CANCELLED]`, `SENT → [ACCEPTED, REJECTED, CANCELLED]`. `REJECTED` se quitó de las
+  salidas de `DRAFT` — no tenía sentido rechazar algo que el cliente nunca vio; `CANCELLED` es la
+  opción correcta ahí. `EXPIRED` no aparece como destino en ninguna fila: es literalmente imposible
+  llegar a él a través de un `PATCH` manual, solo por la vía automática de abajo.
+- Migración `20260926071500_quote_cancelled_status`: `ALTER TYPE "QuoteStatus" ADD VALUE 'CANCELLED'`.
+- **Vencimiento automático sin cron:** no se agregó ningún job en segundo plano. En vez de eso,
+  `QuotesService.autoExpireIfNeeded` se llama desde `findRaw` (por lo tanto desde `findById`,
+  `update`, `remove`, `assertEditable`), desde `findAll` (sobre cada resultado) y desde
+  `findByShareToken` — es decir, desde prácticamente cualquier punto de entrada real. Si una `Quote`
+  en `DRAFT`/`SENT` tiene `validUntil` en el pasado, se actualiza a `EXPIRED` en ese mismo momento
+  (auto-corrección perezosa) antes de devolver cualquier respuesta. No hay ninguna ruta real que deje
+  ver una cotización vencida todavía como `DRAFT`/`SENT`, pero tampoco hay nada corriendo en segundo
+  plano — se decidió así por simplicidad (este proyecto no tiene todavía infraestructura de jobs
+  programados) y porque toda interacción real con una cotización pasa por el servicio.
+- Verificado con llamadas directas a la API (autenticado como agente real): `DRAFT → REJECTED`
+  rechazado con 400 ("No se puede pasar de DRAFT a REJECTED"); `DRAFT → CANCELLED` aceptado;
+  cotización creada con `validUntil` de ayer, al hacer `GET` inmediatamente después ya viene como
+  `EXPIRED`; intentar `EXPIRED → ACCEPTED` rechazado con 400; `SENT → CANCELLED` aceptado y sigue
+  generando el `shareToken` igual que antes. Las tres cotizaciones sintéticas usadas para esta prueba
+  se borraron directo de la base de datos al terminar (no se pueden borrar por la app una vez que
+  salen de `DRAFT`, es la regla de negocio existente de `QuotesService.remove`).
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

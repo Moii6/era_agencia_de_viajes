@@ -89,7 +89,11 @@ Trip (Viaje — creado por la agencia, salida única con fecha fija, cupo (turis
 Quote (cotización sobre un Trip)
  ├─ QuoteOccupancy[] (grupo de viajeros que comparte habitación: N adultos + N menores)
  │   └─ QuoteOccupancyActivity[] (actividades opcionales elegidas por ese grupo)
- ├─ status: DRAFT | SENT | ACCEPTED | REJECTED | EXPIRED
+ ├─ status: DRAFT | SENT | ACCEPTED | REJECTED | CANCELLED | EXPIRED
+ │   (CANCELLED lo elige el agente a mano por cualquier motivo; EXPIRED lo
+ │   pone el sistema solo, nunca a mano, cuando pasa validUntil)
+ ├─ shareToken (se genera al pasar a SENT — respalda el link público de solo
+ │   lectura para el cliente, sin necesitar cuenta)
  └─ Reservation? (1:1, se crea al aceptar)
 
 Reservation (confirmación de una Quote ACCEPTED)
@@ -255,14 +259,27 @@ Los ocupantes de este autobús (viajeros y guías) se consultan vía `SeatAssign
 | clientId | uuid FK → Client | |
 | userId | uuid FK → User | Agente que cotiza |
 | tripId | uuid FK → Trip | |
-| status | enum DRAFT/SENT/ACCEPTED/REJECTED/EXPIRED | |
+| status | enum DRAFT/SENT/ACCEPTED/REJECTED/CANCELLED/EXPIRED | Ver transiciones abajo |
 | currency | string | |
 | subtotal | decimal | Suma de `QuoteOccupancy.subtotal` + actividades (antes de comisión) |
 | commission | decimal | 5% de `subtotal` — es como la agencia gana dinero en cada reserva |
 | total | decimal | `subtotal + commission` |
 | validUntil | date? | |
+| shareToken | string? unique | Se genera la primera vez que pasa a SENT; respalda `/c/:token`, la vista pública de solo lectura para el cliente (sin login). Se conserva aunque el estado cambie después |
 | notes | text? | |
 | createdAt / updatedAt | timestamp | |
+
+*Transiciones de `status` (aplicadas en `QuotesService`):*
+- `DRAFT → SENT` / `DRAFT → CANCELLED`
+- `SENT → ACCEPTED` / `SENT → REJECTED` / `SENT → CANCELLED`
+- `ACCEPTED`, `REJECTED`, `CANCELLED`, `EXPIRED` son terminales (sin salida).
+- `EXPIRED` nunca es una opción manual — el servicio lo aplica solo, la
+  primera vez que una `Quote` en `DRAFT` o `SENT` se toca (lectura o
+  escritura) después de que pasó `validUntil`. No hay cron: es
+  autocorrección perezosa (lazy self-heal) en cada acceso, no un job en
+  segundo plano.
+- `CANCELLED` es la cancelación manual del agente, por cualquier motivo
+  distinto al vencimiento de fecha.
 
 ### QuoteOccupancy *(grupo de viajeros que comparte habitación)*
 | Campo | Tipo | Notas |
@@ -422,6 +439,7 @@ enum QuoteStatus {
   SENT
   ACCEPTED
   REJECTED
+  CANCELLED
   EXPIRED
 }
 

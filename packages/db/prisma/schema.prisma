@@ -59,6 +59,10 @@ enum QuoteStatus {
   SENT
   ACCEPTED
   REJECTED
+  // Agent cancels manually for any reason (trip no longer applies, client
+  // called it off outside the app, etc.) — distinct from EXPIRED, which is
+  // set automatically once validUntil passes, never chosen by hand.
+  CANCELLED
   EXPIRED
 }
 
@@ -340,6 +344,10 @@ model Quote {
   total      Decimal     @db.Decimal(12, 2)
   validUntil DateTime?
   notes      String?
+  // Generated the first time the quote moves to SENT — lets the client open
+  // a read-only public view without an account. Stays valid afterward even
+  // if the status changes again, so the client can still open the same link.
+  shareToken String?     @unique
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 

@@ -16,6 +16,7 @@ const STATUS_FILTERS: { value: QuoteStatus | "ALL"; label: string }[] = [
   { value: "SENT", label: "Enviada" },
   { value: "ACCEPTED", label: "Aceptada" },
   { value: "REJECTED", label: "Rechazada" },
+  { value: "CANCELLED", label: "Cancelada" },
   { value: "EXPIRED", label: "Expirada" },
 ];
 

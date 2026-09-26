@@ -4,6 +4,7 @@ import { OccupancyActivitiesController } from './occupancies/activities/occupanc
 import { OccupancyActivitiesService } from './occupancies/activities/occupancy-activities.service';
 import { OccupanciesController } from './occupancies/occupancies.controller';
 import { OccupanciesService } from './occupancies/occupancies.service';
+import { PublicQuotesController } from './public-quotes.controller';
 import { QuotesController } from './quotes.controller';
 import { QuotesService } from './quotes.service';
 
@@ -13,6 +14,7 @@ import { QuotesService } from './quotes.service';
     QuotesController,
     OccupanciesController,
     OccupancyActivitiesController,
+    PublicQuotesController,
   ],
   providers: [QuotesService, OccupanciesService, OccupancyActivitiesService],
   exports: [QuotesService],
