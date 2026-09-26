@@ -54,6 +54,11 @@ export type RoomType = {
   characteristics: string | null;
   maxOccupancy: number;
   quantityAvailable: number | null;
+  // Only present on the list returned by listRoomTypes — how many of its
+  // occupancies belong to a CONFIRMED/COMPLETED reservation (a room only
+  // counts as taken once the booking is actually confirmed, not just
+  // quoted). Absent on create/update responses.
+  _count?: { occupancies: number };
 };
 
 export type Activity = {

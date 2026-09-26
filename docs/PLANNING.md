@@ -829,6 +829,29 @@ ver, desde el viaje (no desde cada reserva por separado), quién ya tiene asient
   muestra "2/30 asientos ocupados" y la lista "#5 Jane Doe" / "#6 Josue Arevalo Rubio · Titular", en
   el orden numérico correcto.
 
+**Habitaciones disponibles por tipo, en la página del viaje (2026-09-25):** el usuario pidió ver
+cuántas habitaciones de cada tipo quedan disponibles. Como `RoomType.quantityAvailable` nunca se
+comparaba contra nada (era puramente informativo, ver la entrada del "modelo de negocio real de
+precios" más arriba), hubo que definir qué cuenta como "ocupada". Se le preguntó directamente al
+usuario (dos opciones: solo cotizaciones `ACCEPTED`, o cualquier cotización no rechazada/expirada) y
+contestó una tercera cosa más precisa: **solo reservas ya confirmadas** — ni una cotización aceptada
+todavía sin reserva, ni una reserva que sigue `PENDING_DEPOSIT` cuentan como ocupación real todavía.
+- `RoomTypesService.findAllForTrip` agrega un `_count.occupancies` filtrado —
+  `occupancies: { where: { quote: { reservation: { status: { in: ['CONFIRMED', 'COMPLETED'] } } } } }`
+  — usando el soporte de Prisma para contar relaciones con filtro (disponible desde hace varias
+  versiones, confirmado funcionando en la 5.22 que usa este proyecto). `COMPLETED` cuenta igual que
+  `CONFIRMED` porque es un estado posterior en el mismo ciclo de vida (ver la regla de reservas de
+  más arriba) — nunca tendría sentido que una reserva totalmente pagada dejara de "ocupar" el cuarto.
+- Frontend: `RoomTypesSection` cambia el texto "{quantityAvailable} disponibles" (el número crudo,
+  sin restar nada) por "{disponibles} de {quantityAvailable} disponibles", con
+  `disponibles = max(0, quantityAvailable - _count.occupancies)` — el `max(0, …)` es solo defensivo,
+  ya que nada bloquea todavía crear más ocupaciones de las que hay disponibles (eso quedó pendiente,
+  ver la pregunta que se le hizo al usuario sobre agregar una validación real).
+- Verificado contra el viaje real del usuario: su única reserva de este viaje pasó de
+  `PENDING_DEPOSIT` a `CONFIRMED` en algún momento de la sesión (se le registró el anticipo inicial)
+  — la página mostró "4 de 5 disponibles" para el tipo de habitación que usa esa reserva, confirmando
+  que la cuenta baja justo cuando la reserva pasa a confirmada, no antes.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

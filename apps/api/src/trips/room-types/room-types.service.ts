@@ -16,6 +16,19 @@ export class RoomTypesService {
     return this.prisma.roomType.findMany({
       where: { tripId },
       orderBy: { name: 'asc' },
+      // A room only counts as taken once its reservation is actually
+      // confirmed (or further along, COMPLETED) — a DRAFT/SENT quote is
+      // just a proposal, not a hold on inventory, and CONFIRMED is reached
+      // automatically once the initial deposit lands (see ReservationsService).
+      include: {
+        _count: {
+          select: {
+            occupancies: {
+              where: { quote: { reservation: { status: { in: ['CONFIRMED', 'COMPLETED'] } } } },
+            },
+          },
+        },
+      },
     });
   }
 
