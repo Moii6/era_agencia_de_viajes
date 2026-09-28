@@ -1125,6 +1125,31 @@ que el formulario de creación ya no permita dejar la hora en blanco.
   notas) sigue funcionando sin pedirlas de nuevo. En el formulario, el label de "Hora" muestra "*" y
   el input tiene el atributo `required` solo en el modal de creación.
 
+**Selector de fecha/hora personalizado en el formulario de viaje (2026-09-28):** el usuario pidió
+agregar un selector de fecha y hora al formulario de crear viaje. Los campos ya usaban
+`<input type="date">`/`<input type="time">` (nativos del navegador) desde un par de commits antes —
+se le preguntó qué faltaba exactamente y contestó que quería algo más vistoso/personalizado, no el
+widget nativo del navegador (que se ve muy distinto y básico según el navegador/SO).
+- Dos componentes nuevos en `apps/web/src/components/ui/`: `DatePicker.tsx` (calendario mensual en un
+  popover, navegación de mes con ‹ ›, hoy marcado con borde teal, día seleccionado en fondo teal) y
+  `TimePicker.tsx` (lista desplazable de horarios cada 15 minutos, auto-scroll al valor seleccionado
+  al abrir). Sin dependencia nueva — construidos a mano con Tailwind, mismo patrón de "clic afuera
+  cierra" que ya usa `NotificationsBell` (listener de `mousedown` en el documento).
+- `DatePicker` hace toda la aritmética de fechas en UTC (`Date.UTC(...)`), igual que
+  `lib/formats.ts` — un `departureDate`/`returnDate` de Trip no tiene hora real, así que evitar que el
+  huso horario del navegador corra el día un día para atrás es la misma razón de siempre.
+- Ambos componentes llevan un `<input type="text" required readOnly aria-hidden className="sr-only">`
+  oculto, sincronizado con el valor seleccionado — así la validación nativa `required` del navegador
+  (el tooltip de "completa este campo" al enviar) sigue funcionando aunque ya no haya un
+  `<input type="date">`/`type="time">` real en el DOM.
+- `TripForm` ahora usa `<DatePicker>`/`<TimePicker>` en los 4 campos (salida y retorno), en vez de los
+  inputs nativos — mismo `value`/`onChange` que ya tenían, sin tocar la lógica de envío del formulario.
+- Verificado con Playwright, con capturas de pantalla del calendario y de la lista de horas (ambas
+  con el estilo del resto de la app — bordes redondeados, acento teal, modo oscuro). Ciclo completo:
+  crear un viaje seleccionando fecha/hora de salida y retorno solo con los pickers (sin escribir nada
+  a mano) guardó los valores correctos y se mostraron bien en el detalle; abrir "Editar" en un viaje
+  real con hora ya guardada mostró los pickers prellenados correctamente.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { TimePicker } from "@/components/ui/TimePicker";
 import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { listProviders, Provider } from "@/lib/providers";
@@ -130,27 +132,13 @@ export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
             <label htmlFor="departureDate" className={labelClass}>
               Fecha *
             </label>
-            <input
-              id="departureDate"
-              type="date"
-              value={departureDate}
-              onChange={(e) => setDepartureDate(e.target.value)}
-              className={inputClass}
-              required
-            />
+            <DatePicker id="departureDate" value={departureDate} onChange={setDepartureDate} required />
           </div>
           <div>
             <label htmlFor="departureTime" className={labelClass}>
               Hora{isCreate ? " *" : ""}
             </label>
-            <input
-              id="departureTime"
-              type="time"
-              value={departureTime}
-              onChange={(e) => setDepartureTime(e.target.value)}
-              className={inputClass}
-              required={isCreate}
-            />
+            <TimePicker id="departureTime" value={departureTime} onChange={setDepartureTime} required={isCreate} />
           </div>
           <div>
             <label htmlFor="departurePoint" className={labelClass}>
@@ -174,27 +162,13 @@ export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
             <label htmlFor="returnDate" className={labelClass}>
               Fecha *
             </label>
-            <input
-              id="returnDate"
-              type="date"
-              value={returnDate}
-              onChange={(e) => setReturnDate(e.target.value)}
-              className={inputClass}
-              required
-            />
+            <DatePicker id="returnDate" value={returnDate} onChange={setReturnDate} required />
           </div>
           <div>
             <label htmlFor="returnTime" className={labelClass}>
               Hora{isCreate ? " *" : ""}
             </label>
-            <input
-              id="returnTime"
-              type="time"
-              value={returnTime}
-              onChange={(e) => setReturnTime(e.target.value)}
-              className={inputClass}
-              required={isCreate}
-            />
+            <TimePicker id="returnTime" value={returnTime} onChange={setReturnTime} required={isCreate} />
           </div>
           <div>
             <label htmlFor="returnPoint" className={labelClass}>
