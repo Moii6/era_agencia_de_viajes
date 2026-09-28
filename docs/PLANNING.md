@@ -1081,6 +1081,30 @@ el check-in de un pasajero ausente, con una nota — no bloquea el avance.
   Los `TripCheckIn` creados durante la prueba se borraron y el viaje se regresó a `CHECKIN_DEPARTURE`
   al terminar, para no dejarlo a medias para pruebas manuales futuras del usuario.
 
+**Dos bugs reales en el auto-avance a IN_PROGRESS (2026-09-28):** el usuario reportó, sobre el viaje
+de prueba `dc22686a-...`, que aparecía "en curso" mientras el dropdown seguía mostrando `DRAFT` —
+"ningún viaje que no esté publicado puede iniciarse". Encontrado y corregido:
+- **Bug 1 — `DRAFT` sí avanzaba a `IN_PROGRESS`:** `autoAdvanceIfNeeded` (entrada del 2026-09-27)
+  incluía `DRAFT` en `canAdvance` por error — un viaje nunca publicado podía "iniciar" solo con que
+  pasara su fecha de salida. Corregido: `canAdvance` ahora es solo `PUBLISHED`/`CLOSED`. Un `DRAFT` con
+  fecha ya pasada se queda en `DRAFT` para siempre hasta que alguien lo publique o cancele a mano —
+  a propósito no se automatiza nada más ahí, es una alerta de que a alguien se le olvidó publicarlo.
+- **Bug 2 — sin `departureTime`, caía a medianoche UTC:** ya corregido el bug 1, el usuario reportó
+  el mismo viaje otra vez: "se debe respetar la fecha y la hora de salida, entonces este viaje aún no
+  debería estar en curso". Causa: `combineDateAndTime` devolvía medianoche UTC de `departureDate`
+  cuando `departureTime` era `null`/no parseable (diseño original del 2026-09-27) — eso significa que
+  cualquier viaje publicado "de hoy" sin hora capturada empieza a las 00:00, es decir, prácticamente
+  en el instante en que empieza el día, sin respetar ninguna hora real. Corregido:
+  `combineDateAndTime` ahora devuelve `null` cuando no hay hora parseable, y `autoAdvanceIfNeeded`
+  trata `null` como "todavía no se puede saber, no avanza" — un viaje sin `departureTime` capturado
+  simplemente no avanza a `IN_PROGRESS` hasta que alguien le ponga una hora real.
+- Verificado con llamadas directas a la API: un `DRAFT` con fecha pasada se queda `DRAFT` tras `GET`;
+  al publicarlo si tiene hora pasada avanza a `IN_PROGRESS`; publicado pero **sin** `departureTime`
+  se queda en `PUBLISHED` indefinidamente; al ponerle una hora ya pasada, avanza de inmediato.
+- El viaje de prueba `dc22686a-...` quedó dos veces en un estado que no debía (una por cada bug) —
+  ambas veces se revirtió a mano a `DRAFT`/`currentPhase: null` y se borraron los `TripCheckIn` que
+  hubiera, para que el usuario pueda seguir usándolo como fixture limpio de sus propias pruebas.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

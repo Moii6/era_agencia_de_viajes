@@ -172,12 +172,16 @@ Sin cambios respecto a v1 (ver historial).
 | createdAt / updatedAt | timestamp | |
 
 *`IN_PROGRESS` automático:* igual que `Quote.EXPIRED`, no hay ningún job en segundo plano — un Trip en
-`DRAFT`/`PUBLISHED`/`CLOSED` pasa solo a `IN_PROGRESS` la primera vez que se toca (lectura o
-escritura) después de que se cumple `departureDate` + `departureTime` (autocorrección perezosa en
-`TripsService.autoAdvanceIfNeeded`). Si `departureTime` no se parsea como `HH:MM`, se usa medianoche
-UTC de `departureDate`. `COMPLETED` y `CANCELLED` los sigue marcando el agente a mano — a propósito no
-se automatizó `COMPLETED` al pasar `returnDate`, para no cerrar la operación sin que alguien confirme
-que todo salió bien.
+`PUBLISHED`/`CLOSED` (nunca `DRAFT` — un viaje que no se publicó no puede "iniciar") pasa solo a
+`IN_PROGRESS` la primera vez que se toca (lectura o escritura) después de que se cumple
+`departureDate` + `departureTime` (autocorrección perezosa en `TripsService.autoAdvanceIfNeeded`). Si
+`departureTime` no se parsea como `HH:MM` (incluye no tenerlo capturado), **no avanza** — no cae a
+medianoche UTC de `departureDate` como una primera versión de esto hacía, porque eso hacía que
+cualquier viaje "de hoy" arrancara desde las 00:00, sin respetar una hora real de salida. Sin
+`departureTime` capturado, el viaje simplemente se queda `PUBLISHED`/`CLOSED` hasta que alguien le
+ponga una hora. `COMPLETED` y `CANCELLED` los sigue marcando el agente a mano — a propósito no se
+automatizó `COMPLETED` al pasar `returnDate`, para no cerrar la operación sin que alguien confirme que
+todo salió bien.
 
 Los guías asignados viven en la tabla puente `TripGuide` (relación muchos-a-muchos con `User`), no
 como una FK directa en `Trip` — un viaje siempre tiene varios guías (mínimo 3).

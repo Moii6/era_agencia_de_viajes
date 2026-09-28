@@ -16,11 +16,14 @@ const TIME_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 // departureDate is a pure calendar date (UTC midnight, see formatDate's
 // comment on the frontend); departureTime is free text ("08:00") with no
 // format enforced at the DB level, since older trips may predate the
-// time input existing at all. Unparseable/missing time falls back to
-// UTC midnight of that date, same as having no time set.
-function combineDateAndTime(date: Date, time: string | null): Date {
+// time input existing at all. Falling back to UTC midnight of that date
+// when the time is missing/unparseable would make the trip "start" the
+// instant its calendar day begins, which defeats the point of respecting
+// an actual departure time — so this returns null instead, meaning
+// "can't tell yet, don't advance" (see autoAdvanceIfNeeded).
+function combineDateAndTime(date: Date, time: string | null): Date | null {
   const match = time?.match(TIME_PATTERN);
-  if (!match) return date;
+  if (!match) return null;
   const combined = new Date(date);
   combined.setUTCHours(Number(match[1]), Number(match[2]), 0, 0);
   return combined;
@@ -128,8 +131,13 @@ export class TripsService {
 
   // A trip past its departure date+time self-heals to IN_PROGRESS the next
   // time it's touched (read or write) — no scheduler, same lazy pattern as
-  // Quote.autoExpireIfNeeded. COMPLETED/CANCELLED stay untouched: the agent
-  // still marks those by hand (deliberately not automated — see PLANNING.md).
+  // Quote.autoExpireIfNeeded. DRAFT is deliberately excluded: a trip that
+  // was never published can't "start" just because its date came and went
+  // — it stays DRAFT until someone notices and publishes or cancels it.
+  // COMPLETED/CANCELLED stay untouched too: the agent marks those by hand
+  // (deliberately not automated — see PLANNING.md). Without a parseable
+  // departureTime, combineDateAndTime returns null — there's no real hour
+  // to respect yet, so the trip simply doesn't advance until one is set.
   private async autoAdvanceIfNeeded<
     T extends {
       id: string;
@@ -139,9 +147,9 @@ export class TripsService {
       currentPhase: TripPhase | null;
     },
   >(trip: T): Promise<T> {
-    const canAdvance = trip.status === 'DRAFT' || trip.status === 'PUBLISHED' || trip.status === 'CLOSED';
+    const canAdvance = trip.status === 'PUBLISHED' || trip.status === 'CLOSED';
     const departureAt = combineDateAndTime(trip.departureDate, trip.departureTime);
-    if (!canAdvance || departureAt.getTime() > Date.now()) {
+    if (!canAdvance || !departureAt || departureAt.getTime() > Date.now()) {
       return trip;
     }
 
