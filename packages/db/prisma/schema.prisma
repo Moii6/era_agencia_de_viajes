@@ -57,6 +57,24 @@ enum TripStatus {
   CANCELLED
 }
 
+// Day-of-trip guide workflow, only meaningful while status = IN_PROGRESS
+// (null before then). CHECKIN_DEPARTURE -> EN_DESTINO and
+// CHECKIN_RETURN -> RETURN_TRANSFER advance on their own once every seat is
+// checked in for that leg (TripsCheckInService); EN_DESTINO -> CHECKIN_RETURN
+// has no data signal to trigger it, so a guide starts it by hand. Stays at
+// EN_DESTINO for the whole stay on a multi-day trip, not per day.
+enum TripPhase {
+  CHECKIN_DEPARTURE
+  EN_DESTINO
+  CHECKIN_RETURN
+  RETURN_TRANSFER
+}
+
+enum CheckInLeg {
+  DEPARTURE
+  RETURN
+}
+
 enum QuoteStatus {
   DRAFT
   SENT
@@ -151,6 +169,7 @@ model User {
   checkpoints      Checkpoint[]
   deposits         Deposit[]
   notifications    Notification[]
+  tripCheckIns     TripCheckIn[]
 
   @@index([tenantId])
 }
@@ -257,6 +276,7 @@ model Trip {
   capacity             Int
   minimumDepositAmount Decimal    @db.Decimal(12, 2)
   status               TripStatus @default(DRAFT)
+  currentPhase         TripPhase?
   notes                String?
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
@@ -268,6 +288,7 @@ model Trip {
   activities      Activity[]
   quotes          Quote[]
   checkpoints     Checkpoint[]
+  checkIns        TripCheckIn[]
 
   @@index([tenantId])
 }
@@ -322,7 +343,30 @@ model SeatAssignment {
   tripGuide   TripGuide? @relation(fields: [tripGuideId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
 
+  checkIns TripCheckIn[]
+
   @@unique([busId, seatNumber])
+  @@index([tripId])
+}
+
+// One row per seat per leg (departure/return) — a no-show still gets a row
+// (checkedIn: false + note), since the guide records everyone either way
+// rather than the roster silently staying incomplete.
+model TripCheckIn {
+  id               String         @id @default(uuid())
+  tripId           String
+  trip             Trip           @relation(fields: [tripId], references: [id])
+  seatAssignmentId String
+  seatAssignment   SeatAssignment @relation(fields: [seatAssignmentId], references: [id])
+  leg              CheckInLeg
+  checkedIn        Boolean        @default(true)
+  note             String?
+  checkedByUserId  String
+  checkedBy        User           @relation(fields: [checkedByUserId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([seatAssignmentId, leg])
   @@index([tripId])
 }
 

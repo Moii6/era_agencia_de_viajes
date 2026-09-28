@@ -2,6 +2,9 @@ import { apiFetch } from "./api";
 
 export type TripStatus = "DRAFT" | "PUBLISHED" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
+// Only meaningful once status = IN_PROGRESS (null otherwise).
+export type TripPhase = "CHECKIN_DEPARTURE" | "EN_DESTINO" | "CHECKIN_RETURN" | "RETURN_TRANSFER";
+
 export type Trip = {
   id: string;
   name: string;
@@ -19,6 +22,7 @@ export type Trip = {
   capacity: number;
   minimumDepositAmount: string;
   status: TripStatus;
+  currentPhase: TripPhase | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -230,4 +234,50 @@ export function updateActivity(tripId: string, activityId: string, input: Partia
 
 export function deleteActivity(tripId: string, activityId: string) {
   return apiFetch<Activity>(`/trips/${tripId}/activities/${activityId}`, { method: "DELETE" });
+}
+
+// --- Check-ins ---
+
+export type CheckInLeg = "DEPARTURE" | "RETURN";
+
+export type TripCheckIn = {
+  id: string;
+  seatAssignmentId: string;
+  leg: CheckInLeg;
+  checkedIn: boolean;
+  note: string | null;
+};
+
+// One row per seat (traveler or guide) on a bus of the trip, with its
+// check-in record for whichever leg was requested — absent (empty array)
+// until someone checks that seat in.
+export type SeatCheckInRow = {
+  id: string;
+  seatNumber: string;
+  bus: { id: string; label: string };
+  traveler: { id: string; fullName: string; isHolder: boolean } | null;
+  tripGuide: { id: string; isLead: boolean; user: { id: string; name: string } } | null;
+  checkIns: TripCheckIn[];
+};
+
+export type CheckInInput = {
+  seatAssignmentId: string;
+  leg: CheckInLeg;
+  checkedIn?: boolean;
+  note?: string;
+};
+
+export function listCheckIns(tripId: string, leg: CheckInLeg) {
+  return apiFetch<SeatCheckInRow[]>(`/trips/${tripId}/checkins?leg=${leg}`);
+}
+
+export function submitCheckIn(tripId: string, input: CheckInInput) {
+  return apiFetch<TripCheckIn>(`/trips/${tripId}/checkins`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function startReturnCheckIn(tripId: string) {
+  return apiFetch<Trip>(`/trips/${tripId}/checkins/start-return`, { method: "POST" });
 }

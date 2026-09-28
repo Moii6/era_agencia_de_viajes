@@ -366,6 +366,42 @@ El autobús/asiento del viajero vive en `SeatAssignment` (relación opcional 1:1
 | occurredAt | timestamp | |
 | createdAt | timestamp | |
 
+*Nota:* `Checkpoint` sigue sin implementación de API/UI (solo el modelo, planeado para el tracker del
+turista vía `Reservation.touristAccessToken`). El flujo de check-in por fases descrito abajo
+(`TripCheckIn`/`Trip.currentPhase`) es una feature **separada y más chica**, construida antes — un día
+podría alimentar `Checkpoint` (ej. crear un `TRIP_START` cuando `currentPhase` pasa a `EN_DESTINO`, un
+`RETURN_START` cuando pasa a `RETURN_TRANSFER`) pero por ahora no lo toca.
+
+### Flujo de check-in por fases (Trip.currentPhase / TripCheckIn)
+Seguimiento operativo del día del viaje, lo activan los guías a mano — ver la entrada del
+2026-09-28 en `PLANNING.md` para el diseño completo.
+
+| Campo (`Trip.currentPhase`) | Tipo | Notas |
+|---|---|---|
+| currentPhase | enum CHECKIN_DEPARTURE/EN_DESTINO/CHECKIN_RETURN/RETURN_TRANSFER, nullable | `null` mientras el viaje no está `IN_PROGRESS`; se inicializa en `CHECKIN_DEPARTURE` en el mismo momento en que el status pasa a `IN_PROGRESS` |
+
+| Campo (`TripCheckIn`) | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| tripId | uuid FK → Trip | Redundante con `seatAssignment.tripId`, para consultas directas |
+| seatAssignmentId | uuid FK → SeatAssignment | Un viajero o un guía — el mismo asiento que ya existe para el bus |
+| leg | enum DEPARTURE/RETURN | |
+| checkedIn | boolean | `false` = no llegó — el guía igual registra la fila, con nota |
+| note | text? | Ej. "el pasajero no llegó" |
+| checkedByUserId | uuid FK → User | Guía (u OWNER/ADMIN) que lo registró |
+| createdAt / updatedAt | timestamp | |
+
+*Unicidad:* `@@unique([seatAssignmentId, leg])` — un asiento tiene a lo mucho un check-in por tramo,
+pero se puede corregir (upsert) incluso después de que la fase ya avanzó.
+
+*Cómo avanza `currentPhase`:*
+- `CHECKIN_DEPARTURE → EN_DESTINO` y `CHECKIN_RETURN → RETURN_TRANSFER`: automático, en cuanto todos
+  los asientos del viaje (de todos los autobuses) tienen su `TripCheckIn` para ese tramo.
+- `EN_DESTINO → CHECKIN_RETURN`: manual — no hay ninguna señal de datos que diga "ya es hora de
+  volver", lo inicia un guía a propósito (`POST /trips/:tripId/checkins/start-return`).
+- `RETURN_TRANSFER →` fin de fases: no existe transición automática — el viaje se cierra marcando
+  `Trip.status = COMPLETED` a mano (feature separada, ya existente).
+
 ### Notification (notificaciones internas, en polling — sin WebSockets)
 | Campo | Tipo | Notas |
 |---|---|---|
@@ -457,6 +493,18 @@ enum TripStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+enum TripPhase {
+  CHECKIN_DEPARTURE
+  EN_DESTINO
+  CHECKIN_RETURN
+  RETURN_TRANSFER
+}
+
+enum CheckInLeg {
+  DEPARTURE
+  RETURN
 }
 
 enum QuoteStatus {

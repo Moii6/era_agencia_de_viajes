@@ -4,6 +4,8 @@ import { ActivitiesController } from './activities/activities.controller';
 import { ActivitiesService } from './activities/activities.service';
 import { BusesController } from './buses/buses.controller';
 import { BusesService } from './buses/buses.service';
+import { CheckInsController } from './checkins/checkins.controller';
+import { CheckInsService } from './checkins/checkins.service';
 import { GuidesController } from './guides/guides.controller';
 import { GuidesService } from './guides/guides.service';
 import { RoomTypesController } from './room-types/room-types.controller';
@@ -19,6 +21,7 @@ import { TripsService } from './trips.service';
     RoomTypesController,
     ActivitiesController,
     GuidesController,
+    CheckInsController,
   ],
   providers: [
     TripsService,
@@ -26,6 +29,7 @@ import { TripsService } from './trips.service';
     RoomTypesService,
     ActivitiesService,
     GuidesService,
+    CheckInsService,
   ],
   exports: [TripsService],
 })

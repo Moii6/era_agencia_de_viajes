@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { TripStatus, UserRole } from '@erp/db';
+import { TripPhase, TripStatus, UserRole } from '@erp/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { QueryTripsDto } from './dto/query-trips.dto';
@@ -136,6 +136,7 @@ export class TripsService {
       status: TripStatus;
       departureDate: Date;
       departureTime: string | null;
+      currentPhase: TripPhase | null;
     },
   >(trip: T): Promise<T> {
     const canAdvance = trip.status === 'DRAFT' || trip.status === 'PUBLISHED' || trip.status === 'CLOSED';
@@ -146,9 +147,9 @@ export class TripsService {
 
     await this.prisma.trip.update({
       where: { id: trip.id },
-      data: { status: 'IN_PROGRESS' },
+      data: { status: 'IN_PROGRESS', currentPhase: 'CHECKIN_DEPARTURE' },
     });
-    return { ...trip, status: 'IN_PROGRESS' };
+    return { ...trip, status: 'IN_PROGRESS', currentPhase: 'CHECKIN_DEPARTURE' };
   }
 
   private async assertProviderBelongsToTenant(

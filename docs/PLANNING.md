@@ -1025,6 +1025,62 @@ cerrar la operación sin confirmar que todo salió bien).
   para la prueba se borraron directo de la base de datos al terminar (no hay endpoint de borrado para
   `Trip` en la app).
 
+**Flujo de check-in por fases del viaje, día a día (2026-09-28):** el usuario escribió a mano
+`docs/flujo.md` con la idea de un flujo de 5 fases activado por los guías una vez que el viaje está en
+curso, y pidió analizarlo. El análisis encontró 4 vacíos reales antes de poder construirlo: (1)
+`Checkpoint` es a nivel de Trip, no de autobús, pero la regla "la fase 2 no inicia hasta que los 3
+autobuses hicieron check-in" necesita saber el estado de cada asiento por separado; (2) no estaba
+claro si un viaje de varios días repite las fases cada día; (3) no estaba claro si las actividades
+bloquean el avance de fase; (4) no había manejo de excepción para un pasajero que no se presenta. Las
+respuestas del usuario, en orden: (1) confirmado, cada autobús necesita su check-in completo; (2) el
+viaje se queda en la fase "en destino" todo el tiempo intermedio, no se repite por día; (3) las
+actividades se sacan del flujo por completo (no todos los pasajeros asisten); (4) el guía sí completa
+el check-in de un pasajero ausente, con una nota — no bloquea el avance.
+- Con eso, las 5 fases originales del `flujo.md` se simplificaron a 4 estados de `Trip.currentPhase`
+  (la fase 5, "marcar terminado", ya era `Trip.status = COMPLETED`, ya existente y manual — no forma
+  parte de este enum):
+  `CHECKIN_DEPARTURE → EN_DESTINO → CHECKIN_RETURN → RETURN_TRANSFER`.
+- Modelo nuevo `TripCheckIn` (migración `20260928000000_trip_checkins`): un registro por
+  `(seatAssignmentId, leg)` — reutiliza `SeatAssignment`, que ya modela viajeros y guías sentados en
+  un autobús, en vez de inventar un roster paralelo. `checkedIn: false` + `note` cubre el caso del
+  pasajero ausente sin bloquear nada — el check-in de ese asiento igual queda "completo".
+- `Trip.currentPhase` (nullable, solo tiene sentido con `status = IN_PROGRESS`) se inicializa en
+  `CHECKIN_DEPARTURE` en el mismo momento en que `TripsService.autoAdvanceIfNeeded` pasa el status a
+  `IN_PROGRESS`.
+- `CheckInsService.maybeAdvancePhase` avanza `CHECKIN_DEPARTURE → EN_DESTINO` y
+  `CHECKIN_RETURN → RETURN_TRANSFER` solos, en cuanto el conteo de `TripCheckIn` para ese tramo iguala
+  el total de `SeatAssignment` del viaje. `EN_DESTINO → CHECKIN_RETURN` es la única transición manual
+  (`POST /trips/:tripId/checkins/start-return`) — no hay ninguna señal de datos que diga "ya es hora
+  de volver", tiene que decidirlo un guía.
+- Un check-in de `RETURN` se rechaza con 400 si la fase todavía no llegó a `CHECKIN_RETURN`/
+  `RETURN_TRANSFER` (no tiene sentido pasar lista para el regreso si ni siquiera se decidió empezarlo)
+  — pero un check-in de `DEPARTURE` sigue permitido en cualquier fase posterior, como corrección
+  (ej. "se me olvidó marcarlo", detectado después de que la fase ya avanzó).
+- Permisos: `GET` abierto a los 4 roles (igual que Buses/RoomTypes/Actividades/Guías); `POST`
+  check-in y `start-return` restringidos a `OWNER, ADMIN, GUIDE` — a propósito **sin** `AGENT`, porque
+  el check-in es una acción operativa del día del viaje, no de ventas (mismo criterio que ya se usa
+  para Buses/RoomTypes/Actividades).
+- Frontend: `CheckInSection.tsx`, nueva primera subsección de la página del viaje (antes de Guías),
+  visible solo cuando `trip.currentPhase` no es `null`. Agrupa por autobús, muestra "X/Y con check-in"
+  y botones "Presente"/"No llegó" por asiento (con campo de nota); en fase `EN_DESTINO` muestra el
+  botón "Iniciar check-in de regreso"; en `RETURN_TRANSFER` solo un mensaje informativo. No se expuso
+  UI para editar un check-in ya registrado (el backend sí lo permite vía upsert) — se dejó fuera del
+  MVP a propósito.
+- **Nota aparte, no relacionada con esta feature:** al construir esto se encontró un viaje ya
+  `IN_PROGRESS` de antes de que `currentPhase` existiera (el viaje de prueba "happy path",
+  `dc22686a-...`), que se habría quedado con `currentPhase: null` para siempre (nunca vuelve a pasar
+  por `autoAdvanceIfNeeded` porque ya no está en `DRAFT/PUBLISHED/CLOSED`). Se corrigió con un backfill
+  puntual (`UPDATE ... WHERE status = 'IN_PROGRESS' AND currentPhase IS NULL`) en vez de una migración
+  aparte, porque en ese momento solo afectaba a esa única fila de prueba.
+- Verificado con llamadas directas a la API contra el viaje real de prueba (2 asientos en 1 autobús):
+  check-in de `RETURN` rechazado con 400 durante `CHECKIN_DEPARTURE`; el primer check-in de salida no
+  avanza la fase (1/2); el segundo (marcado como no-show, con nota) sí la avanza sola a `EN_DESTINO`;
+  `start-return` mueve a `CHECKIN_RETURN`; una corrección de `DEPARTURE` después de eso sigue
+  funcionando; los dos check-in de `RETURN` avanzan la fase a `RETURN_TRANSFER` en el mismo patrón
+  (1/2 no avanza, 2/2 sí). La página del viaje mostró correctamente "Traslado de regreso" al final.
+  Los `TripCheckIn` creados durante la prueba se borraron y el viaje se regresó a `CHECKIN_DEPARTURE`
+  al terminar, para no dejarlo a medias para pruebas manuales futuras del usuario.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

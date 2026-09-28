@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { TripForm } from "@/components/forms/TripForm";
 import { BusesSection } from "@/components/trips/BusesSection";
+import { CheckInSection } from "@/components/trips/CheckInSection";
 import { GuidesSection } from "@/components/trips/GuidesSection";
 import { RoomTypesSection } from "@/components/trips/RoomTypesSection";
 import { ActivitiesSection } from "@/components/trips/ActivitiesSection";
@@ -28,6 +29,9 @@ export default function TripDetailPage() {
   // reading localStorage synchronously during render would make the
   // client's first paint diverge from the SSR HTML.
   const [isGuide, setIsGuide] = useState(false);
+  // OWNER/ADMIN/GUIDE can check travelers in; AGENT can only look, same as
+  // it can't touch buses/room-types/activities either.
+  const [canCheckIn, setCanCheckIn] = useState(false);
 
   async function load() {
     setError("");
@@ -39,7 +43,9 @@ export default function TripDetailPage() {
   }
 
   useEffect(() => {
-    setIsGuide(getUser()?.role === "GUIDE");
+    const role = getUser()?.role;
+    setIsGuide(role === "GUIDE");
+    setCanCheckIn(role === "OWNER" || role === "ADMIN" || role === "GUIDE");
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
@@ -158,6 +164,16 @@ export default function TripDetailPage() {
       ) : null}
 
       <div className="mt-8 space-y-6">
+        {trip.currentPhase ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+            <CheckInSection
+              tripId={trip.id}
+              currentPhase={trip.currentPhase}
+              canAct={canCheckIn}
+              onAdvance={load}
+            />
+          </div>
+        ) : null}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <GuidesSection tripId={trip.id} readOnly={isGuide} />
         </div>
