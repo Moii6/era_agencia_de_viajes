@@ -257,29 +257,38 @@ model Provider {
 }
 
 model Trip {
-  id                   String     @id @default(uuid())
-  tenantId             String
-  tenant               Tenant     @relation(fields: [tenantId], references: [id])
-  name                 String
-  destination          String?
-  departureDate        DateTime
-  departureTime        String?
-  departurePoint       String
-  returnDate           DateTime
-  returnTime           String?
-  returnPoint          String
-  transportIncluded    Boolean    @default(true)
-  transportNotes       String?
-  lodgingIncluded      Boolean    @default(true)
-  hotelProviderId      String?
-  hotelProvider        Provider?  @relation(fields: [hotelProviderId], references: [id])
-  capacity             Int
-  minimumDepositAmount Decimal    @db.Decimal(12, 2)
-  status               TripStatus @default(DRAFT)
-  currentPhase         TripPhase?
-  notes                String?
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
+  id                      String     @id @default(uuid())
+  tenantId                String
+  tenant                  Tenant     @relation(fields: [tenantId], references: [id])
+  name                    String
+  destination             String?
+  departureDate           DateTime
+  departureTime           String?
+  departurePoint          String
+  returnDate              DateTime
+  returnTime              String?
+  returnPoint             String
+  transportIncluded       Boolean    @default(true)
+  transportNotes          String?
+  lodgingIncluded         Boolean    @default(true)
+  hotelProviderId         String?
+  hotelProvider           Provider?  @relation(fields: [hotelProviderId], references: [id])
+  capacity                Int
+  minimumDepositAmount    Decimal    @db.Decimal(12, 2)
+  status                  TripStatus @default(DRAFT)
+  currentPhase            TripPhase?
+  // When each phase was actually reached — set alongside currentPhase by
+  // TripsService/CheckInsService, purely so the dashboard timeline can show
+  // a real date per step instead of just the current step. Not used for any
+  // gating logic (currentPhase already handles that).
+  phaseCheckinDepartureAt DateTime?
+  phaseEnDestinoAt        DateTime?
+  phaseCheckinReturnAt    DateTime?
+  phaseReturnTransferAt   DateTime?
+  completedAt             DateTime?
+  notes                   String?
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
 
   guides          TripGuide[]
   buses           Bus[]

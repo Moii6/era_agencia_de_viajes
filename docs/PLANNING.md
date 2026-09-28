@@ -1150,6 +1150,35 @@ widget nativo del navegador (que se ve muy distinto y básico según el navegado
   a mano) guardó los valores correctos y se mostraron bien en el detalle; abrir "Editar" en un viaje
   real con hora ya guardada mostró los pickers prellenados correctamente.
 
+**Timeline de fases del viaje en el Dashboard (2026-09-28):** el usuario pidió que, cuando un viaje
+está en curso, el Dashboard muestre un timeline/track de las fases — mandó de referencia una imagen de
+un tracker de paquetería (Pedido Realizado → Procesado → En Tránsito → Entregado, con fecha, ubicación
+e ícono por paso, el paso activo animado).
+- `Trip` gana 5 columnas de timestamp, solo para mostrar (no participan en ninguna validación de
+  gating, que sigue siendo exclusivamente `currentPhase`): `phaseCheckinDepartureAt`,
+  `phaseEnDestinoAt`, `phaseCheckinReturnAt`, `phaseReturnTransferAt`, `completedAt`. Se setean en el
+  mismo momento que ya se setea `currentPhase`/`status` en `TripsService.autoAdvanceIfNeeded`,
+  `CheckInsService.maybeAdvancePhase`, `CheckInsService.startReturnCheckIn` y `TripsService.update`
+  (este último solo cuando `status` pasa a `COMPLETED` por primera vez).
+- Nuevo componente `TripPhaseTimeline.tsx` — 5 pasos verticales (check-in de salida, en destino,
+  check-in de regreso, traslado de regreso, completado), cada uno con ícono propio (bandera, pin de
+  mapa, portapapeles con check, autobús, bandera a cuadros), estado visual `done`/`current`/`pending`
+  (paloma verde / círculo teal con ícono animado (`animate-pulse`) / círculo gris), línea conectora
+  teal en los tramos ya completados. Cada paso alcanzado muestra fecha+hora (`formatDateTime`, nueva
+  en `lib/formats.ts` — a diferencia de `formatDate`, esta sí usa la zona horaria del navegador porque
+  son timestamps reales, no fechas de calendario puras) y una ubicación (`departurePoint`/
+  `destination`/`returnPoint` según el paso).
+- El Dashboard ya tenía una tarjeta "Viaje en curso", pero su lógica calculaba "en curso" a mano
+  comparando fechas contra un viaje `PUBLISHED` (de antes de que `IN_PROGRESS` existiera como estado
+  real). Se aprovechó para corregirla: ahora filtra directo por `status === "IN_PROGRESS"`, la fuente
+  de verdad real que ya mantiene el backend — la comparación de fechas quedó solo para "próximo viaje"
+  (`PUBLISHED` con fecha futura), como respaldo cuando no hay ninguno en curso.
+- Verificado visualmente con Playwright (captura de pantalla) contra el viaje real de prueba, que
+  llevaba su propio progreso de check-in de sesiones anteriores (`EN_DESTINO`): el timeline mostró el
+  primer paso con paloma verde, el segundo con el ícono de pin animado dentro de un círculo teal, y los
+  tres restantes en gris con "Pendiente" — exactamente el comportamiento esperado, sin necesidad de
+  modificar los datos reales del viaje para la prueba.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

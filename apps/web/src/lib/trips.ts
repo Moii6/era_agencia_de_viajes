@@ -23,6 +23,13 @@ export type Trip = {
   minimumDepositAmount: string;
   status: TripStatus;
   currentPhase: TripPhase | null;
+  // Set alongside currentPhase, purely for display (e.g. the dashboard
+  // tracker) — not used for any gating logic.
+  phaseCheckinDepartureAt: string | null;
+  phaseEnDestinoAt: string | null;
+  phaseCheckinReturnAt: string | null;
+  phaseReturnTransferAt: string | null;
+  completedAt: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;

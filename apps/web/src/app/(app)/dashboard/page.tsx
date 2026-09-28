@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TripPhaseTimeline } from "@/components/trips/TripPhaseTimeline";
 import { Badge } from "@/components/ui/Badge";
 import { getUser } from "@/lib/auth";
 import { formatDate, todayUTCDateOnly, toUTCDateOnly } from "@/lib/formats";
@@ -48,19 +49,20 @@ export default function DashboardPage() {
   }, []);
 
   const today = todayUTCDateOnly();
-  // Only PUBLISHED trips count as "in progress" or "upcoming" — a DRAFT
-  // trip isn't a real operational commitment yet, regardless of its dates.
-  const activeTrips = (trips ?? []).filter((t) => t.status === "PUBLISHED");
 
+  // IN_PROGRESS is the real, backend-tracked signal now (TripsService
+  // auto-advances it) — no need to re-derive "ongoing" from dates here
+  // anymore. If several trips are in progress at once, show the one that
+  // left first.
   const ongoingTrip =
-    activeTrips
-      .filter((t) => toUTCDateOnly(t.departureDate) <= today && today <= toUTCDateOnly(t.returnDate))
+    (trips ?? [])
+      .filter((t) => t.status === "IN_PROGRESS")
       .sort((a, b) => toUTCDateOnly(a.departureDate) - toUTCDateOnly(b.departureDate))[0] ?? null;
 
   const upcomingTrip = ongoingTrip
     ? null
-    : activeTrips
-        .filter((t) => toUTCDateOnly(t.departureDate) > today)
+    : (trips ?? [])
+        .filter((t) => t.status === "PUBLISHED" && toUTCDateOnly(t.departureDate) > today)
         .sort((a, b) => toUTCDateOnly(a.departureDate) - toUTCDateOnly(b.departureDate))[0] ?? null;
 
   const latestCreatedTrip =
@@ -88,6 +90,12 @@ export default function DashboardPage() {
           <TripCard label="Último viaje creado" trip={latestCreatedTrip} emptyMessage="Todavía no se ha creado ningún viaje." />
         </div>
       )}
+
+      {ongoingTrip ? (
+        <div className="mt-6">
+          <TripPhaseTimeline trip={ongoingTrip} />
+        </div>
+      ) : null}
     </div>
   );
 }

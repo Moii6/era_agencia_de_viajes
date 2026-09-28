@@ -383,6 +383,7 @@ Seguimiento operativo del día del viaje, lo activan los guías a mano — ver l
 | Campo (`Trip.currentPhase`) | Tipo | Notas |
 |---|---|---|
 | currentPhase | enum CHECKIN_DEPARTURE/EN_DESTINO/CHECKIN_RETURN/RETURN_TRANSFER, nullable | `null` mientras el viaje no está `IN_PROGRESS`; se inicializa en `CHECKIN_DEPARTURE` en el mismo momento en que el status pasa a `IN_PROGRESS` |
+| phaseCheckinDepartureAt / phaseEnDestinoAt / phaseCheckinReturnAt / phaseReturnTransferAt / completedAt | timestamp?, cada uno | Se setean junto con `currentPhase`/`status`, solo para mostrar en el timeline del Dashboard (`TripPhaseTimeline.tsx`) — no participan en ninguna validación, esa sigue siendo solo `currentPhase` |
 
 | Campo (`TripCheckIn`) | Tipo | Notas |
 |---|---|---|

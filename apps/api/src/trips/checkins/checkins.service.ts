@@ -94,7 +94,7 @@ export class CheckInsService {
 
     return this.prisma.trip.update({
       where: { id: tripId },
-      data: { currentPhase: 'CHECKIN_RETURN' },
+      data: { currentPhase: 'CHECKIN_RETURN', phaseCheckinReturnAt: new Date() },
     });
   }
 
@@ -123,7 +123,11 @@ export class CheckInsService {
     }
 
     const nextPhase = leg === 'DEPARTURE' ? 'EN_DESTINO' : 'RETURN_TRANSFER';
-    await this.prisma.trip.update({ where: { id: tripId }, data: { currentPhase: nextPhase } });
+    const timestampField = leg === 'DEPARTURE' ? 'phaseEnDestinoAt' : 'phaseReturnTransferAt';
+    await this.prisma.trip.update({
+      where: { id: tripId },
+      data: { currentPhase: nextPhase, [timestampField]: new Date() },
+    });
   }
 
   private async assertTripAccessible(tenantId: string, tripId: string, requester?: Requester) {

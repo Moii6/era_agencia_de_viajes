@@ -113,7 +113,7 @@ export class TripsService {
         'IN_PROGRESS se aplica automáticamente al llegar la fecha y hora de salida, no se puede elegir a mano',
       );
     }
-    await this.findById(tenantId, id);
+    const current = await this.findById(tenantId, id);
     await this.assertProviderBelongsToTenant(tenantId, dto.hotelProviderId);
 
     return this.prisma.trip.update({
@@ -125,6 +125,7 @@ export class TripsService {
           ? new Date(dto.departureDate)
           : undefined,
         returnDate: dto.returnDate ? new Date(dto.returnDate) : undefined,
+        completedAt: dto.status === 'COMPLETED' && current.status !== 'COMPLETED' ? new Date() : undefined,
       },
     });
   }
@@ -145,6 +146,7 @@ export class TripsService {
       departureDate: Date;
       departureTime: string | null;
       currentPhase: TripPhase | null;
+      phaseCheckinDepartureAt: Date | null;
     },
   >(trip: T): Promise<T> {
     const canAdvance = trip.status === 'PUBLISHED' || trip.status === 'CLOSED';
@@ -153,11 +155,12 @@ export class TripsService {
       return trip;
     }
 
+    const now = new Date();
     await this.prisma.trip.update({
       where: { id: trip.id },
-      data: { status: 'IN_PROGRESS', currentPhase: 'CHECKIN_DEPARTURE' },
+      data: { status: 'IN_PROGRESS', currentPhase: 'CHECKIN_DEPARTURE', phaseCheckinDepartureAt: now },
     });
-    return { ...trip, status: 'IN_PROGRESS', currentPhase: 'CHECKIN_DEPARTURE' };
+    return { ...trip, status: 'IN_PROGRESS', currentPhase: 'CHECKIN_DEPARTURE', phaseCheckinDepartureAt: now };
   }
 
   private async assertProviderBelongsToTenant(

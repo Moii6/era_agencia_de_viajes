@@ -24,3 +24,15 @@ export function todayUTCDateOnly() {
   const now = new Date();
   return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 }
+
+// Unlike formatDate, this is for real instants (e.g. Trip.phase*At) — an
+// actual moment in time, not a pure calendar date — so it's shown in the
+// viewer's own timezone rather than pinned to UTC.
+export function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("es-MX", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
