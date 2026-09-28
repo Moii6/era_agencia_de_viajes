@@ -100,13 +100,14 @@ model Tenant {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
-  users        User[]
-  clients      Client[]
-  interactions Interaction[]
-  providers    Provider[]
-  trips        Trip[]
-  quotes       Quote[]
-  reservations Reservation[]
+  users         User[]
+  clients       Client[]
+  interactions  Interaction[]
+  providers     Provider[]
+  trips         Trip[]
+  quotes        Quote[]
+  reservations  Reservation[]
+  notifications Notification[]
 }
 
 model User {
@@ -140,14 +141,40 @@ model User {
   pendingRole       UserRole?
   approvedByUserIds String[]  @default([])
 
-  clientsOwned     Client[]      @relation("ClientOwner")
+  clientsOwned     Client[]       @relation("ClientOwner")
   interactions     Interaction[]
   quotes           Quote[]
   guideAssignments TripGuide[]
   checkpoints      Checkpoint[]
   deposits         Deposit[]
+  notifications    Notification[]
 
   @@index([tenantId])
+}
+
+model Notification {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+
+  // Free-form event key (e.g. "USER_APPROVAL_PENDING") — not an enum on
+  // purpose, so new notification kinds don't need a schema migration.
+  type      String
+  message   String
+  // In-app path to open when clicked (e.g. "/agencia"); optional since not
+  // every notification necessarily points somewhere.
+  link      String?
+  // The entity this notification is about (e.g. the User.id whose approval
+  // is pending) — lets a whole batch get resolved together once that
+  // underlying request is handled, without each recipient having to
+  // individually dismiss theirs.
+  relatedId String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, userId, read])
 }
 
 model Client {

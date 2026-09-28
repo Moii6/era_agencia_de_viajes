@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { Badge } from "@/components/ui/Badge";
 import { clearSession, getUser, SessionUser } from "@/lib/auth";
 
@@ -69,9 +70,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <div className="mb-8">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400">ERP</p>
-          <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">Travify</p>
+        <div className="mb-8 flex items-start justify-between gap-2">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400">ERP</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">Travify</p>
+          </div>
+          <NotificationsBell />
         </div>
 
         <nav className="flex-1 space-y-1">

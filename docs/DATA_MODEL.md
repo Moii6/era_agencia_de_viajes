@@ -358,6 +358,22 @@ El autobús/asiento del viajero vive en `SeatAssignment` (relación opcional 1:1
 | occurredAt | timestamp | |
 | createdAt | timestamp | |
 
+### Notification (notificaciones internas, en polling — sin WebSockets)
+| Campo | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| tenantId | uuid FK → Tenant | |
+| userId | uuid FK → User | Destinatario |
+| type | string | Libre, no enum — ej. `USER_APPROVAL_PENDING`, `USER_APPROVAL_DECIDED` |
+| message | text | |
+| link | string? | Ruta interna a abrir al hacer clic (ej. `/agencia`) |
+| relatedId | string? | Id de la entidad de la que trata (ej. el `User.id` con aprobación pendiente) — permite resolver en bloque todas las notificaciones de una misma solicitud a la vez |
+| read | boolean | |
+| createdAt | timestamp | |
+
+La campanita del frontend hace polling cada 30s (`GET /notifications`), sin WebSockets ni
+Server-Sent Events. Por ahora el único emisor es `UsersService` (flujo de aprobación de usuarios).
+
 ## 5. Puntos a confirmar (asunciones que tomé para no bloquear el avance)
 
 **Resuelto en esta ronda:** catálogo `Service` eliminado definitivamente; checkpoints confirmados por

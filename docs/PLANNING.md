@@ -958,6 +958,44 @@ y no quedó claro al inicio si `CANCELLED` era lo mismo que `EXPIRED`), quedó a
   se borraron directo de la base de datos al terminar (no se pueden borrar por la app una vez que
   salen de `DRAFT`, es la regla de negocio existente de `QuotesService.remove`).
 
+**Notificaciones de acciones pendientes (2026-09-27):** el usuario preguntó cómo se implementarían
+notificaciones para acciones como una aprobación de usuario pendiente. Se le presentaron dos
+alternativas — una tabla `Notification` con campanita que hace polling, vs. algo en tiempo real por
+WebSockets — y se recomendó polling por ser mucho más simple y suficiente para un ERP interno sin
+infraestructura de tiempo real todavía. El usuario aceptó empezar por ahí.
+- Modelo nuevo `Notification` (migración `20260927000000_notifications`): `tenantId`, `userId`
+  (destinatario), `type` (string libre, no enum — para no necesitar una migración cada vez que se
+  agregue un tipo de evento nuevo), `message`, `link?` (ruta interna a abrir al hacer clic),
+  `relatedId?` (el id de la entidad de la que trata — p. ej. el `User.id` cuya aprobación está
+  pendiente) y `read`.
+- `relatedId` existe específicamente para poder resolver en bloque todas las notificaciones de una
+  misma solicitud de una sola vez (`NotificationsService.resolveRelated`) — con 2 OWNERs, una
+  solicitud típica notifica a un solo approver (el que no la pidió), pero un registro público
+  notifica a los dos; sin `relatedId` cada uno tendría que descartar la suya por separado aunque la
+  solicitud ya esté resuelta.
+- `NotificationsModule` nuevo (`apps/api/src/notifications/`), expone `GET /notifications` (últimas
+  20 del usuario autenticado), `PATCH /notifications/:id/read`, `POST /notifications/read-all`.
+- `UsersService` es el único punto de disparo por ahora: notifica a los approvers requeridos
+  (`requiredApproverIds`, ya existente para el flujo de consenso) al crear un usuario que queda
+  `PENDING`, al editar un usuario que queda con cambios pendientes, y al registrarse públicamente; y
+  notifica al solicitante original (`notifyOutcome`) cuándo su solicitud fue aprobada o rechazada,
+  resolviendo de paso las notificaciones de los demás approvers vía `relatedId`. Un registro público
+  no tiene solicitante (nadie autenticado lo pidió), así que su resolución no genera notificación de
+  resultado — solo limpia las de los approvers.
+- Frontend: `NotificationsBell` (`apps/web/src/components/notifications/`) en la esquina superior del
+  sidebar — punto rojo con contador de no leídas, panel desplegable con las notificaciones recientes
+  (no leídas remarcadas con punto teal), "Marcar todas como leídas", y clic en una notificación la
+  marca leída y navega a su `link`. Hace polling cada 30s (`setInterval`) más una carga inicial; sin
+  WebSockets ni Server-Sent Events.
+- Verificado end-to-end con Playwright: un registro público real (sin sesión) generó una notificación
+  para **ambos** OWNERs activos; iniciando sesión como uno de ellos, la campanita mostró el badge "1",
+  el panel mostró el mensaje correcto, y hacer clic navegó a `/agencia` y la marcó como leída. Al
+  rechazar esa alta pendiente, se confirmó por base de datos que la notificación del **otro** OWNER
+  (que nunca inició sesión en la prueba) también quedó marcada como leída — confirma que
+  `resolveRelated` sí actúa sobre notificaciones de otros usuarios, no solo la del que actuó. El
+  usuario de prueba (`Notif Test`) quedó eliminado al final (el rechazo de un alta `PENDING` borra el
+  registro), sin datos de prueba residuales.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ClientsModule } from './clients/clients.module';
 import { InteractionsModule } from './interactions/interactions.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProvidersModule } from './providers/providers.module';
 import { QuotesModule } from './quotes/quotes.module';
@@ -20,6 +21,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     TenantModule,
     UsersModule,
+    NotificationsModule,
     ClientsModule,
     InteractionsModule,
     ProvidersModule,

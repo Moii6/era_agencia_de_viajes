@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { UserRole } from '@erp/db';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -45,7 +46,10 @@ const SELECT_FIELDS = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async findAll(tenantId: string) {
     return this.prisma.user.findMany({
@@ -96,6 +100,19 @@ export class UsersService {
       select: SELECT_FIELDS,
     });
 
+    if (approvalRequired) {
+      const requester = await this.prisma.user.findUnique({
+        where: { id: requesterId },
+        select: { name: true },
+      });
+      await this.notifyApprovers(
+        tenantId,
+        requesterId,
+        `${requester?.name ?? 'Alguien'} solicitó dar de alta a ${user.name} (${user.role}) — pendiente de tu aprobación`,
+        user.id,
+      );
+    }
+
     return user;
   }
 
@@ -123,7 +140,7 @@ export class UsersService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         tenantId: tenant.id,
         email: dto.email.toLowerCase(),
@@ -134,6 +151,15 @@ export class UsersService {
       },
       select: SELECT_FIELDS,
     });
+
+    await this.notifyApprovers(
+      tenant.id,
+      null,
+      `${user.name} se registró públicamente — pendiente de tu aprobación`,
+      user.id,
+    );
+
+    return user;
   }
 
   async update(
@@ -193,7 +219,7 @@ export class UsersService {
 
     // A fresh proposal replaces whatever was staged before — any prior
     // partial approvals were for that earlier proposal, not this one.
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         pendingName: dto.name?.trim() ?? target.name,
@@ -204,6 +230,19 @@ export class UsersService {
       },
       select: SELECT_FIELDS,
     });
+
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId },
+      select: { name: true },
+    });
+    await this.notifyApprovers(
+      tenantId,
+      requesterId,
+      `${requester?.name ?? 'Alguien'} solicitó editar a ${target.name} — pendiente de tu aprobación`,
+      userId,
+    );
+
+    return updated;
   }
 
   async approve(tenantId: string, approverId: string, userId: string) {
@@ -233,7 +272,7 @@ export class UsersService {
     }
 
     if (target.status === 'PENDING') {
-      return this.prisma.user.update({
+      const activated = await this.prisma.user.update({
         where: { id: userId },
         data: {
           status: 'ACTIVE',
@@ -242,9 +281,11 @@ export class UsersService {
         },
         select: SELECT_FIELDS,
       });
+      await this.notifyOutcome(tenantId, target, `dar de alta a ${target.name}`, 'aprobada');
+      return activated;
     }
 
-    return this.prisma.user.update({
+    const edited = await this.prisma.user.update({
       where: { id: userId },
       data: {
         name: target.pendingName ?? target.name,
@@ -258,6 +299,8 @@ export class UsersService {
       },
       select: SELECT_FIELDS,
     });
+    await this.notifyOutcome(tenantId, target, `editar a ${target.name}`, 'aprobada');
+    return edited;
   }
 
   async reject(tenantId: string, approverId: string, userId: string) {
@@ -266,13 +309,15 @@ export class UsersService {
     // Rejecting only takes one dissenting OWNER — vetoing a bad request
     // shouldn't need the same consensus that approving it does.
     if (target.status === 'PENDING') {
-      return this.prisma.user.delete({
+      const deleted = await this.prisma.user.delete({
         where: { id: userId },
         select: SELECT_FIELDS,
       });
+      await this.notifyOutcome(tenantId, target, `dar de alta a ${target.name}`, 'rechazada');
+      return deleted;
     }
 
-    return this.prisma.user.update({
+    const reverted = await this.prisma.user.update({
       where: { id: userId },
       data: {
         pendingName: null,
@@ -283,6 +328,8 @@ export class UsersService {
       },
       select: SELECT_FIELDS,
     });
+    await this.notifyOutcome(tenantId, target, `editar a ${target.name}`, 'rechazada');
+    return reverted;
   }
 
   // Deactivation is deliberately immediate and unilateral — unlike create/
@@ -377,6 +424,46 @@ export class UsersService {
     return activeOwners
       .map((owner) => owner.id)
       .filter((id) => id !== requestedByUserId);
+  }
+
+  private async notifyApprovers(
+    tenantId: string,
+    requesterId: string | null,
+    message: string,
+    relatedId: string,
+  ) {
+    const approverIds = await this.requiredApproverIds(tenantId, requesterId);
+    await this.notificationsService.createMany(tenantId, approverIds, {
+      type: 'USER_APPROVAL_PENDING',
+      message,
+      link: '/agencia',
+      relatedId,
+    });
+  }
+
+  // Tells the original requester how their alta/edit was decided, and
+  // clears out any other approver's now-stale "pending" notification for
+  // the same request (relevant with 2 owners + a public registration,
+  // where both got pinged but only one needed to act to resolve it here).
+  private async notifyOutcome(
+    tenantId: string,
+    target: { id: string; requestedByUserId: string | null },
+    actionLabel: string,
+    outcome: 'aprobada' | 'rechazada',
+  ) {
+    await this.notificationsService.resolveRelated(
+      tenantId,
+      'USER_APPROVAL_PENDING',
+      target.id,
+    );
+    if (target.requestedByUserId) {
+      await this.notificationsService.create(tenantId, target.requestedByUserId, {
+        type: 'USER_APPROVAL_DECIDED',
+        message: `Tu solicitud para ${actionLabel} fue ${outcome}`,
+        link: '/agencia',
+        relatedId: target.id,
+      });
+    }
   }
 
   private async assertOwnerCapNotExceeded(
