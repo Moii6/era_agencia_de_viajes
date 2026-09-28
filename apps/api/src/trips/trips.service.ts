@@ -3,13 +3,28 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { UserRole } from '@erp/db';
+import { TripStatus, UserRole } from '@erp/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { QueryTripsDto } from './dto/query-trips.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 
 type Requester = { id: string; role: UserRole };
+
+const TIME_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+
+// departureDate is a pure calendar date (UTC midnight, see formatDate's
+// comment on the frontend); departureTime is free text ("08:00") with no
+// format enforced at the DB level, since older trips may predate the
+// time input existing at all. Unparseable/missing time falls back to
+// UTC midnight of that date, same as having no time set.
+function combineDateAndTime(date: Date, time: string | null): Date {
+  const match = time?.match(TIME_PATTERN);
+  if (!match) return date;
+  const combined = new Date(date);
+  combined.setUTCHours(Number(match[1]), Number(match[2]), 0, 0);
+  return combined;
+}
 
 @Injectable()
 export class TripsService {
@@ -20,7 +35,7 @@ export class TripsService {
   // omitted for internal calls (e.g. from update()) that don't need the
   // guide restriction applied.
   async findAll(tenantId: string, query: QueryTripsDto, requester?: Requester) {
-    return this.prisma.trip.findMany({
+    const trips = await this.prisma.trip.findMany({
       where: {
         tenantId,
         ...(query.status ? { status: query.status } : {}),
@@ -39,6 +54,7 @@ export class TripsService {
         },
       },
     });
+    return Promise.all(trips.map((trip) => this.autoAdvanceIfNeeded(trip)));
   }
 
   async findById(tenantId: string, id: string, requester?: Requester) {
@@ -60,7 +76,7 @@ export class TripsService {
       throw new NotFoundException('Viaje no encontrado');
     }
 
-    return trip;
+    return this.autoAdvanceIfNeeded(trip);
   }
 
   async create(tenantId: string, dto: CreateTripDto) {
@@ -89,6 +105,11 @@ export class TripsService {
   }
 
   async update(tenantId: string, id: string, dto: UpdateTripDto) {
+    if (dto.status === 'IN_PROGRESS') {
+      throw new BadRequestException(
+        'IN_PROGRESS se aplica automáticamente al llegar la fecha y hora de salida, no se puede elegir a mano',
+      );
+    }
     await this.findById(tenantId, id);
     await this.assertProviderBelongsToTenant(tenantId, dto.hotelProviderId);
 
@@ -103,6 +124,31 @@ export class TripsService {
         returnDate: dto.returnDate ? new Date(dto.returnDate) : undefined,
       },
     });
+  }
+
+  // A trip past its departure date+time self-heals to IN_PROGRESS the next
+  // time it's touched (read or write) — no scheduler, same lazy pattern as
+  // Quote.autoExpireIfNeeded. COMPLETED/CANCELLED stay untouched: the agent
+  // still marks those by hand (deliberately not automated — see PLANNING.md).
+  private async autoAdvanceIfNeeded<
+    T extends {
+      id: string;
+      status: TripStatus;
+      departureDate: Date;
+      departureTime: string | null;
+    },
+  >(trip: T): Promise<T> {
+    const canAdvance = trip.status === 'DRAFT' || trip.status === 'PUBLISHED' || trip.status === 'CLOSED';
+    const departureAt = combineDateAndTime(trip.departureDate, trip.departureTime);
+    if (!canAdvance || departureAt.getTime() > Date.now()) {
+      return trip;
+    }
+
+    await this.prisma.trip.update({
+      where: { id: trip.id },
+      data: { status: 'IN_PROGRESS' },
+    });
+    return { ...trip, status: 'IN_PROGRESS' };
   }
 
   private async assertProviderBelongsToTenant(

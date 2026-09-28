@@ -136,10 +136,10 @@ export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
             </label>
             <input
               id="departureTime"
+              type="time"
               value={departureTime}
               onChange={(e) => setDepartureTime(e.target.value)}
               className={inputClass}
-              placeholder="08:00"
             />
           </div>
           <div>
@@ -179,10 +179,10 @@ export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
             </label>
             <input
               id="returnTime"
+              type="time"
               value={returnTime}
               onChange={(e) => setReturnTime(e.target.value)}
               className={inputClass}
-              placeholder="18:00"
             />
           </div>
           <div>

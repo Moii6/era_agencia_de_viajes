@@ -1,6 +1,6 @@
 import { apiFetch } from "./api";
 
-export type TripStatus = "DRAFT" | "PUBLISHED" | "CLOSED" | "COMPLETED" | "CANCELLED";
+export type TripStatus = "DRAFT" | "PUBLISHED" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
 export type Trip = {
   id: string;

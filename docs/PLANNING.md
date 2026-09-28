@@ -996,6 +996,35 @@ infraestructura de tiempo real todavía. El usuario aceptó empezar por ahí.
   usuario de prueba (`Notif Test`) quedó eliminado al final (el rechazo de un alta `PENDING` borra el
   registro), sin datos de prueba residuales.
 
+**Estado "En curso" para viajes (2026-09-27):** el usuario notó que había un estado `COMPLETED` para
+viajes pero ninguno para cuando el viaje ya salió y todavía no vuelve. Se le preguntó si debía ser
+automático por fecha (como se acababa de hacer con `Quote.EXPIRED`) o manual como los demás estados de
+viaje, y contestó que automático, calculado con fecha **y hora** de salida — no solo la fecha. Una
+segunda pregunta aclaró que `COMPLETED` se queda manual (el agente lo sigue marcando él mismo, para no
+cerrar la operación sin confirmar que todo salió bien).
+- `TripStatus` gana `IN_PROGRESS` (migración `20260927010000_trip_in_progress_status`). A diferencia
+  de `Quote`, `Trip` nunca tuvo un `ALLOWED_TRANSITIONS` — cualquier estado se podía poner a mano sin
+  validación. Se agregó una única restricción puntual en `TripsService.update`: rechaza con 400 si
+  alguien intenta poner `status: 'IN_PROGRESS'` a mano, sin construir todo un sistema de transiciones
+  que nadie pidió.
+- `TripsService.autoAdvanceIfNeeded` (mismo patrón perezoso que `Quote.autoExpireIfNeeded`, llamado
+  desde `findAll`/`findById`, y por lo tanto también desde `update`): un Trip en
+  `DRAFT`/`PUBLISHED`/`CLOSED` pasa a `IN_PROGRESS` la primera vez que se toca después de que se
+  cumple `departureDate` + `departureTime`.
+- `departureTime` es un campo de texto libre sin formato forzado en la base de datos (viajes
+  anteriores a que existiera el input pueden tener cualquier cosa ahí) — `combineDateAndTime` intenta
+  parsear `HH:MM` con una regex y, si no matchea, usa medianoche UTC de `departureDate` (mismo
+  comportamiento que si no hubiera hora). Aparte, se cambió el input de "Hora" en `TripForm` (salida y
+  retorno) de texto libre a `type="time"`, para que los viajes nuevos/editados sí guarden un formato
+  parseable de forma confiable.
+- Verificado con llamadas directas a la API: un viaje con salida ayer avanza solo a `IN_PROGRESS` al
+  hacer `GET`; uno con salida en 5 días se queda en `PUBLISHED`; intentar `PATCH status: 'IN_PROGRESS'`
+  a mano es rechazado con 400; y el caso límite de "hoy, pero la hora ya pasó" vs. "hoy, pero la hora
+  todavía no llega" se comportó exactamente como se esperaba (el primero avanza, el segundo no) — así
+  se confirmó que de verdad compara fecha **y** hora, no solo el día. Los 4 viajes sintéticos usados
+  para la prueba se borraron directo de la base de datos al terminar (no hay endpoint de borrado para
+  `Trip` en la app).
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

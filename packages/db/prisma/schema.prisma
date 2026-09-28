@@ -50,6 +50,9 @@ enum TripStatus {
   DRAFT
   PUBLISHED
   CLOSED
+  // Set automatically once departureDate + departureTime is reached —
+  // never chosen by hand, same pattern as Quote.EXPIRED.
+  IN_PROGRESS
   COMPLETED
   CANCELLED
 }

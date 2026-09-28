@@ -167,9 +167,17 @@ Sin cambios respecto a v1 (ver historial).
 | hotelProviderId | uuid FK → Provider? | Nullable si lodgingIncluded = false |
 | capacity | int | Cupo máximo total (turistas + guías) — se establece al crear el viaje; debe coincidir con `Σ Bus.seatCapacity` |
 | minimumDepositAmount | decimal | Monto mínimo exigido para el anticipo inicial de cada Reserva |
-| status | enum DRAFT/PUBLISHED/CLOSED/COMPLETED/CANCELLED | |
+| status | enum DRAFT/PUBLISHED/CLOSED/IN_PROGRESS/COMPLETED/CANCELLED | `IN_PROGRESS` es automático, nunca se elige a mano — ver abajo |
 | notes | text? | |
 | createdAt / updatedAt | timestamp | |
+
+*`IN_PROGRESS` automático:* igual que `Quote.EXPIRED`, no hay ningún job en segundo plano — un Trip en
+`DRAFT`/`PUBLISHED`/`CLOSED` pasa solo a `IN_PROGRESS` la primera vez que se toca (lectura o
+escritura) después de que se cumple `departureDate` + `departureTime` (autocorrección perezosa en
+`TripsService.autoAdvanceIfNeeded`). Si `departureTime` no se parsea como `HH:MM`, se usa medianoche
+UTC de `departureDate`. `COMPLETED` y `CANCELLED` los sigue marcando el agente a mano — a propósito no
+se automatizó `COMPLETED` al pasar `returnDate`, para no cerrar la operación sin que alguien confirme
+que todo salió bien.
 
 Los guías asignados viven en la tabla puente `TripGuide` (relación muchos-a-muchos con `User`), no
 como una FK directa en `Trip` — un viaje siempre tiene varios guías (mínimo 3).
@@ -446,6 +454,7 @@ enum TripStatus {
   DRAFT
   PUBLISHED
   CLOSED
+  IN_PROGRESS
   COMPLETED
   CANCELLED
 }

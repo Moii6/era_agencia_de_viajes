@@ -16,6 +16,7 @@ const STATUS_FILTERS: { value: TripStatus | "ALL"; label: string }[] = [
   { value: "DRAFT", label: "Borrador" },
   { value: "PUBLISHED", label: "Publicado" },
   { value: "CLOSED", label: "Cerrado" },
+  { value: "IN_PROGRESS", label: "En curso" },
   { value: "COMPLETED", label: "Completado" },
   { value: "CANCELLED", label: "Cancelado" },
 ];
