@@ -1105,6 +1105,26 @@ de prueba `dc22686a-...`, que aparecía "en curso" mientras el dropdown seguía 
   ambas veces se revirtió a mano a `DRAFT`/`currentPhase: null` y se borraron los `TripCheckIn` que
   hubiera, para que el usuario pueda seguir usándolo como fixture limpio de sus propias pruebas.
 
+**Hora de salida y retorno obligatorias al crear un viaje (2026-09-28):** después de los dos bugs de
+auto-avance de arriba (ambos causados, en el fondo, por viajes sin `departureTime`), el usuario pidió
+que el formulario de creación ya no permita dejar la hora en blanco.
+- `CreateTripDto`: `departureTime`/`returnTime` pasan de opcionales a obligatorios, con
+  `@Matches(/^([01]?\d|2[0-3]):([0-5]\d)$/)` — mismo patrón que ya usaba
+  `TripsService.combineDateAndTime` para parsear, ahora garantizado desde el origen para viajes
+  nuevos. `UpdateTripDto` (que extiende `CreateTripDto` vía `PartialType`) los sigue teniendo
+  opcionales — un viaje creado antes de esta regla, sin hora, se puede seguir editando (otros campos)
+  sin obligar a rellenarla en ese momento.
+- Frontend: `TripForm` es el mismo componente para crear y editar (`trip?` distingue el modo). Los
+  inputs de hora llevan `required={isCreate}` — obligatorios solo al crear, igual que el backend.
+  `TripFormProps.onSubmit` se tuvo que retipar de `TripInput` (estricto) a `TripUpdateInput` (con
+  hora opcional) para que el mismo formulario compile en ambos modos; `viajes/page.tsx` hace un cast
+  a `TripInput` justo antes de llamar `createTrip`, con un comentario explicando que el `required`
+  del HTML es lo que garantiza que de verdad hay hora en ese punto.
+- Verificado con llamadas directas a la API: crear sin horas se rechaza con 400 (mensaje de cada
+  campo); crear con horas válidas funciona; editar ese mismo viaje sin tocar las horas (solo cambiar
+  notas) sigue funcionando sin pedirlas de nuevo. En el formulario, el label de "Hora" muestra "*" y
+  el input tiene el atributo `required` solo en el modal de creación.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.

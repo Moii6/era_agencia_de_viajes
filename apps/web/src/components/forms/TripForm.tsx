@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/api";
 import { listProviders, Provider } from "@/lib/providers";
-import { Trip, TripInput } from "@/lib/trips";
+import { Trip, TripUpdateInput } from "@/lib/trips";
 
 const inputClass =
   "w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-teal-500";
@@ -17,12 +17,21 @@ function toDateInput(value?: string) {
 
 type TripFormProps = {
   trip?: Trip;
-  onSubmit: (input: TripInput) => Promise<unknown>;
+  // Loosely typed (departureTime/returnTime optional) because an edit may
+  // leave them blank on a trip that predates the required-at-creation
+  // rule; the `required` HTML attribute below guarantees they're present
+  // whenever this is actually a create.
+  onSubmit: (input: TripUpdateInput) => Promise<unknown>;
   onCancel: () => void;
 };
 
 export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
   const toast = useToast();
+  // Required only when creating (backend enforces the same for POST) — a
+  // trip made before this requirement existed may still have no time, and
+  // editing it (e.g. just to fix a typo in the name) shouldn't be blocked
+  // on backfilling one.
+  const isCreate = !trip;
   const [name, setName] = useState(trip?.name ?? "");
   const [destination, setDestination] = useState(trip?.destination ?? "");
   const [departureDate, setDepartureDate] = useState(toDateInput(trip?.departureDate));
@@ -132,7 +141,7 @@ export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
           </div>
           <div>
             <label htmlFor="departureTime" className={labelClass}>
-              Hora
+              Hora{isCreate ? " *" : ""}
             </label>
             <input
               id="departureTime"
@@ -140,6 +149,7 @@ export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
               value={departureTime}
               onChange={(e) => setDepartureTime(e.target.value)}
               className={inputClass}
+              required={isCreate}
             />
           </div>
           <div>
@@ -175,7 +185,7 @@ export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
           </div>
           <div>
             <label htmlFor="returnTime" className={labelClass}>
-              Hora
+              Hora{isCreate ? " *" : ""}
             </label>
             <input
               id="returnTime"
@@ -183,6 +193,7 @@ export function TripForm({ trip, onSubmit, onCancel }: TripFormProps) {
               value={returnTime}
               onChange={(e) => setReturnTime(e.target.value)}
               className={inputClass}
+              required={isCreate}
             />
           </div>
           <div>

@@ -14,7 +14,7 @@ import { ActivitiesSection } from "@/components/trips/ActivitiesSection";
 import { ApiError } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { formatDate } from "@/lib/formats";
-import { getTrip, TripDetail, TripInput, TripStatus, updateTrip } from "@/lib/trips";
+import { getTrip, TripDetail, TripStatus, TripUpdateInput, updateTrip } from "@/lib/trips";
 
 const STATUS_OPTIONS: TripStatus[] = ["DRAFT", "PUBLISHED", "CLOSED", "COMPLETED", "CANCELLED"];
 
@@ -50,7 +50,7 @@ export default function TripDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
-  async function handleEdit(input: TripInput) {
+  async function handleEdit(input: TripUpdateInput) {
     await updateTrip(params.id, input);
     toast.success("Viaje actualizado");
     setShowEditModal(false);

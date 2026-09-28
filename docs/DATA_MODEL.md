@@ -156,10 +156,10 @@ Sin cambios respecto a v1 (ver historial).
 | name | string | Ej. "Vallarta" |
 | destination | string? | |
 | departureDate | date | |
-| departureTime | time? | |
+| departureTime | string?, `HH:MM` | Nullable en el schema (compatibilidad con viajes viejos), pero **obligatorio al crear** desde la app (`CreateTripDto`) — sin hora real, `IN_PROGRESS` nunca podría dispararse solo (ver más abajo) |
 | departurePoint | string | Punto de partida |
 | returnDate | date | |
-| returnTime | time? | |
+| returnTime | string?, `HH:MM` | Mismo trato que `departureTime` |
 | returnPoint | string | Punto de retorno |
 | transportIncluded | boolean | Default true |
 | transportNotes | string? | Ej. "Autobús ejecutivo" |

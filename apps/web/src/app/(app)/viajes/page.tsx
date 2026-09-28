@@ -9,7 +9,7 @@ import { TripForm } from "@/components/forms/TripForm";
 import { ApiError } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { formatDate } from "@/lib/formats";
-import { createTrip, listTrips, Trip, TripInput, TripStatus } from "@/lib/trips";
+import { createTrip, listTrips, Trip, TripInput, TripStatus, TripUpdateInput } from "@/lib/trips";
 
 const STATUS_FILTERS: { value: TripStatus | "ALL"; label: string }[] = [
   { value: "ALL", label: "Todos" },
@@ -52,8 +52,12 @@ export default function ViajesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  async function handleCreate(input: TripInput) {
-    const trip = await createTrip(input);
+  async function handleCreate(input: TripUpdateInput) {
+    // TripForm's `required` HTML attributes guarantee departureTime/
+    // returnTime are present when this is actually a create (no `trip`
+    // prop passed in) — TripUpdateInput just has to stay loose enough to
+    // also cover edits on the same shared form.
+    const trip = await createTrip(input as TripInput);
     toast.success("Viaje creado");
     setShowCreateModal(false);
     router.push(`/viajes/${trip.id}`);

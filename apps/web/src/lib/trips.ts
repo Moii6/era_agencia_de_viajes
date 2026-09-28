@@ -95,10 +95,12 @@ export type TripInput = {
   name: string;
   destination?: string;
   departureDate: string;
-  departureTime?: string;
+  // Required at creation (TripUpdateInput makes it optional again for
+  // edits via Partial<TripInput>) — see CreateTripDto.
+  departureTime: string;
   departurePoint: string;
   returnDate: string;
-  returnTime?: string;
+  returnTime: string;
   returnPoint: string;
   transportIncluded?: boolean;
   transportNotes?: string;
