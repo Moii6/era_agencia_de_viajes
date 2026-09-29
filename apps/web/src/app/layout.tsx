@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ERP Agencia de Viajes",
+  title: "Travify",
   description: "Panel de gestión para agencia de viajes",
 };
 
