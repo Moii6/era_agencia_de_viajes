@@ -59,15 +59,30 @@ export default function DashboardPage() {
       .filter((t) => t.status === "IN_PROGRESS")
       .sort((a, b) => toUTCDateOnly(a.departureDate) - toUTCDateOnly(b.departureDate))[0] ?? null;
 
-  const upcomingTrip = ongoingTrip
-    ? null
-    : (trips ?? [])
-        .filter((t) => t.status === "PUBLISHED" && toUTCDateOnly(t.departureDate) > today)
-        .sort((a, b) => toUTCDateOnly(a.departureDate) - toUTCDateOnly(b.departureDate))[0] ?? null;
+  // Its own card now (used to only show when there was no ongoing trip) —
+  // an agency can have a trip in progress and still want to see what's
+  // coming up next.
+  const upcomingTrip =
+    (trips ?? [])
+      .filter((t) => t.status === "PUBLISHED" && toUTCDateOnly(t.departureDate) > today)
+      .sort((a, b) => toUTCDateOnly(a.departureDate) - toUTCDateOnly(b.departureDate))[0] ?? null;
 
   const latestCreatedTrip =
     (trips ?? []).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] ??
     null;
+
+  // completedAt only exists going forward (see the dashboard-timeline
+  // entry in PLANNING.md) — a trip completed before that field was added
+  // falls back to sorting by returnDate instead, so older completions
+  // don't just disappear from consideration.
+  const latestCompletedTrip =
+    (trips ?? [])
+      .filter((t) => t.status === "COMPLETED")
+      .sort((a, b) => {
+        const aTime = a.completedAt ? new Date(a.completedAt).getTime() : toUTCDateOnly(a.returnDate);
+        const bTime = b.completedAt ? new Date(b.completedAt).getTime() : toUTCDateOnly(b.returnDate);
+        return bTime - aTime;
+      })[0] ?? null;
 
   return (
     <div>
@@ -82,10 +97,12 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <TripCard label="Viaje en curso" trip={ongoingTrip} emptyMessage="No hay ningún viaje en curso." />
+          <TripCard label="Próximo viaje" trip={upcomingTrip} emptyMessage="No hay ningún viaje próximo." />
           <TripCard
-            label={ongoingTrip ? "Viaje en curso" : "Próximo viaje"}
-            trip={ongoingTrip ?? upcomingTrip}
-            emptyMessage="No hay viajes en curso ni próximos todavía."
+            label="Último viaje completado"
+            trip={latestCompletedTrip}
+            emptyMessage="Todavía no se ha completado ningún viaje."
           />
           <TripCard label="Último viaje creado" trip={latestCreatedTrip} emptyMessage="Todavía no se ha creado ningún viaje." />
         </div>

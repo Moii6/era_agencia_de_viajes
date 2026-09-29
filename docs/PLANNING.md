@@ -1179,6 +1179,22 @@ e ícono por paso, el paso activo animado).
   tres restantes en gris con "Pendiente" — exactamente el comportamiento esperado, sin necesidad de
   modificar los datos reales del viaje para la prueba.
 
+**Dashboard: 4 tarjetas de viaje en vez de 2 (2026-09-29):** el usuario pidió ver en el Dashboard,
+simultáneamente, el último viaje creado, el próximo, el en curso y el último completado. Antes solo
+había dos tarjetas y "Próximo viaje" se ocultaba por completo en cuanto había un viaje en curso (una
+sola tarjeta hacía las veces de las dos, según cuál aplicara) — ahora son 4 tarjetas independientes,
+cada una con su propio estado vacío, porque una agencia puede tener un viaje en curso y aun así querer
+ver qué sigue después.
+- `latestCompletedTrip`: viajes con `status === 'COMPLETED'`, ordenados por `completedAt` — con
+  fallback a `returnDate` para viajes completados antes de que `completedAt` existiera (entrada del
+  2026-09-28), para que un viaje completado viejo no desaparezca del cálculo solo por no tener ese
+  campo.
+- `upcomingTrip` dejó de estar condicionado a "solo si no hay `ongoingTrip`" — ahora se calcula
+  siempre, independiente del viaje en curso.
+- Verificado visualmente con Playwright: con un viaje próximo (`PUBLISHED`) y uno recién completado
+  pero sin ninguno en curso en ese momento, las 4 tarjetas se mostraron correctamente — "Viaje en
+  curso" con su estado vacío ("No hay ningún viaje en curso"), y las otras tres con datos reales.
+
 ### 7.3 Reglas de negocio no negociables (backend)
 
 1. Multi-tenancy obligatorio: todo query de negocio debe estar filtrado por `tenantId`.
